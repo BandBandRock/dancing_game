@@ -25,6 +25,8 @@ const SCORE_THRESHOLD = 0.3
 Component({
   data: {
     cameraReady: false,
+    danceVideo: '',   // 主体教学视频地址（从搜索页「去跳舞」带入）
+    songName: '',     // 教学视频名称
     supported: true,
     unsupportedReason: '',
     statusText: '正在初始化…',
@@ -60,6 +62,16 @@ Component({
   },
 
   methods: {
+    // 接收搜索页带入的教学视频
+    onLoad(options: any) {
+      if (options && options.video) {
+        this.setData({
+          danceVideo: decodeURIComponent(options.video),
+          songName: options.song ? decodeURIComponent(options.song) : '',
+        })
+      }
+    },
+
     // 1) 能力检测 + 初始化
     checkAndInit() {
       if (!(wx as any).createVKSession) {
@@ -301,6 +313,16 @@ Component({
 
     toggleMirror() {
       this.setData({ mirror: !this.data.mirror })
+    },
+
+    // 返回：优先返回上一页，无栈时回首页
+    goBack() {
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        wx.navigateBack()
+      } else {
+        wx.reLaunch({ url: '../home/home' })
+      }
     },
 
     onCameraError(e: any) {

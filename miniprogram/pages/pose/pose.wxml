@@ -1,37 +1,60 @@
 <!--pages/pose/pose.wxml-->
 <view class="page">
-  <!-- 摄像头画面：前置 -->
-  <camera
-    wx:if="{{cameraReady}}"
-    class="camera"
-    device-position="front"
-    flash="off"
-    frame-size="medium"
-    binderror="onCameraError"
-  ></camera>
+  <!-- 主体：教学视频（从搜索页「去跳舞」带入） -->
+  <video
+    wx:if="{{danceVideo}}"
+    class="main-video"
+    src="{{danceVideo}}"
+    autoplay="{{true}}"
+    controls="{{true}}"
+    show-center-play-btn="{{true}}"
+    object-fit="contain"
+    loop="{{true}}"
+  ></video>
+  <view wx:else class="main-empty">
+    <text class="main-empty-text">未选择教学视频</text>
+  </view>
 
-  <!-- 骨骼渲染覆盖层：与 camera 同尺寸叠在上层 -->
-  <canvas
-    type="2d"
-    id="skeleton"
-    class="skeleton"
-    disable-scroll="{{true}}"
-  ></canvas>
+  <!-- 左上角返回入口 -->
+  <view class="back-btn" hover-class="back-btn-active" bindtap="goBack">
+    <text class="back-icon">‹</text>
+  </view>
 
-  <!-- 顶部状态条 -->
-  <view class="hud">
-    <text class="hud-text">{{statusText}} · 检测到 {{bodyCount}} 人</text>
-    <text class="hud-fps" wx:if="{{fps > 0}}">{{fps}} FPS</text>
+  <!-- 顶部歌名 -->
+  <view wx:if="{{songName}}" class="song-tag">
+    <text class="song-tag-text">{{songName}}</text>
+  </view>
+
+  <!-- 右下角摄像头小窗 + 骨骼识别 -->
+  <view class="cam-float">
+    <camera
+      wx:if="{{cameraReady}}"
+      class="camera"
+      device-position="front"
+      flash="off"
+      frame-size="medium"
+      binderror="onCameraError"
+    ></camera>
+    <canvas
+      type="2d"
+      id="skeleton"
+      class="skeleton"
+      disable-scroll="{{true}}"
+    ></canvas>
+
+    <!-- 小窗内状态条 -->
+    <view class="cam-hud">
+      <text class="cam-hud-text">{{statusText}}</text>
+      <text wx:if="{{bodyCount > 0 || fps > 0}}" class="cam-hud-sub">{{bodyCount}}人 · {{fps}}FPS</text>
+    </view>
+
+    <!-- 镜像切换 -->
+    <view class="cam-mirror" catchtap="toggleMirror">{{mirror ? '镜像开' : '镜像关'}}</view>
   </view>
 
   <!-- 不支持时的降级提示 -->
   <view wx:if="{{!supported}}" class="unsupported">
     <text class="unsupported-title">当前设备暂不支持实时姿态识别</text>
     <text class="unsupported-desc">{{unsupportedReason}}</text>
-  </view>
-
-  <!-- 底部控制 -->
-  <view class="controls">
-    <button class="btn" bindtap="toggleMirror">镜像：{{mirror ? '开' : '关'}}</button>
   </view>
 </view>

@@ -103,6 +103,7 @@
       object-fit="contain"
     ></video>
     <view wx:if="{{!videoFull}}" class="video-tip">替换为您自己的舞曲视频即可精准匹配</view>
+    <view wx:if="{{!videoFull}}" class="video-go-dance" bindtap="onGoDance">🕺 去跳舞</view>
     <view wx:if="{{!videoFull}}" class="video-close" bindtap="onCloseVideo">关闭</view>
   </view>
 </view>

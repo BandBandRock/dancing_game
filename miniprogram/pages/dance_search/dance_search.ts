@@ -19,6 +19,11 @@ interface Song {
 // ============================================================
 const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
 
+// 解析视频完整地址：video 已是绝对地址（http/https）则直接用，否则拼 VIDEO_BASE
+function resolveVideo(video: string): string {
+  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+}
+
 Component({
   data: {
     keyword: '',
@@ -26,7 +31,7 @@ Component({
     types: ['全部', '广场舞', '交谊舞', '民族舞', '健身操', '鬼步舞'],
     songs: [
       // —— 广场舞（12 首）——
-      { name: '最炫民族风', artist: '凤凰传奇', type: '广场舞', duration: '03:32', video: 'gcd-01.mp4' },
+      { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'https://dancing-1253975745.cos.ap-guangzhou.myqcloud.com/v1_coco17.mp4' },
       { name: '小苹果', artist: '筷子兄弟', type: '广场舞', duration: '03:22', video: 'gcd-02.mp4' },
       { name: '荷塘月色', artist: '凤凰传奇', type: '广场舞', duration: '03:53', video: 'gcd-03.mp4' },
       { name: '酒醉的蝴蝶', artist: '崔伟立', type: '广场舞', duration: '03:45', video: 'gcd-04.mp4' },
@@ -153,7 +158,7 @@ Component({
       const song = this.data.songs.find((s) => s.name === name)
       if (!song) return
       this.setData({
-        currentVideo: VIDEO_BASE + song.video,
+        currentVideo: resolveVideo(song.video),
         currentSong: song.name,
         currentType: song.type,
         videoFull: false,
@@ -167,11 +172,19 @@ Component({
       const v = this.data.recommendVideos.find((r) => r.title === title)
       if (!v) return
       this.setData({
-        currentVideo: VIDEO_BASE + v.video,
+        currentVideo: resolveVideo(v.video),
         currentSong: v.title,
         currentType: v.type,
         videoFull: true,
         showVideo: true,
+      })
+    },
+
+    // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
+    onGoDance() {
+      if (!this.data.currentVideo) return
+      wx.navigateTo({
+        url: `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}&song=${encodeURIComponent(this.data.currentSong)}`,
       })
     },
 

@@ -298,6 +298,17 @@ page {
   background: linear-gradient(135deg, #ff7e5f, #feb47b);
   border-radius: 40rpx;
 }
+.video-go-dance {
+  margin-top: 24rpx;
+  width: 100%;
+  text-align: center;
+  padding: 18rpx 0;
+  font-size: 34rpx;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, #5dcaa5, #3bb2b8);
+  border-radius: 40rpx;
+}
 
 /* 满屏播放（推荐视频） */
 .video-mask.full {
