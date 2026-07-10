@@ -1,0 +1,7 @@
+{
+  "navigationBarTitleText": "姿态识别",
+  "navigationBarTextStyle": "white",
+  "navigationBarBackgroundColor": "#000000",
+  "disableScroll": true,
+  "usingComponents": {}
+}

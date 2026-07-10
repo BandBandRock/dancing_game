@@ -1,0 +1,37 @@
+<!--pages/pose/pose.wxml-->
+<view class="page">
+  <!-- 摄像头画面：前置 -->
+  <camera
+    wx:if="{{cameraReady}}"
+    class="camera"
+    device-position="front"
+    flash="off"
+    frame-size="medium"
+    binderror="onCameraError"
+  ></camera>
+
+  <!-- 骨骼渲染覆盖层：与 camera 同尺寸叠在上层 -->
+  <canvas
+    type="2d"
+    id="skeleton"
+    class="skeleton"
+    disable-scroll="{{true}}"
+  ></canvas>
+
+  <!-- 顶部状态条 -->
+  <view class="hud">
+    <text class="hud-text">{{statusText}} · 检测到 {{bodyCount}} 人</text>
+    <text class="hud-fps" wx:if="{{fps > 0}}">{{fps}} FPS</text>
+  </view>
+
+  <!-- 不支持时的降级提示 -->
+  <view wx:if="{{!supported}}" class="unsupported">
+    <text class="unsupported-title">当前设备暂不支持实时姿态识别</text>
+    <text class="unsupported-desc">{{unsupportedReason}}</text>
+  </view>
+
+  <!-- 底部控制 -->
+  <view class="controls">
+    <button class="btn" bindtap="toggleMirror">镜像：{{mirror ? '开' : '关'}}</button>
+  </view>
+</view>
