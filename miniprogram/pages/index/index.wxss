@@ -28,7 +28,6 @@ page {
 .usermotto {
   margin-top: 200px;
 }
-
 .avatar-wrapper {
   padding: 0;
   width: 56px !important;
@@ -61,11 +60,16 @@ page {
   flex: 1;
 }
 
-.pose-entry {
-  margin-top: 40rpx;
-  background: #07c160;
+.login-area {
+  margin-top: 60rpx;
+  display: flex;
+  justify-content: center;
+}
+
+.login-btn {
+  background-color: #07c160;
   color: #fff;
-  font-size: 30rpx;
-  border-radius: 999rpx;
-  padding: 0 60rpx;
+  font-size: 32rpx;
+  padding: 20rpx 60rpx;
+  border-radius: 8rpx;
 }

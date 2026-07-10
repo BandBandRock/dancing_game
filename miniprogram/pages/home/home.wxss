@@ -1,0 +1,205 @@
+/**home.wxss**/
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.page {
+  flex: 1;
+  padding: 24rpx 32rpx;
+}
+
+/* 搜索条 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 60rpx;
+  padding: 16rpx 28rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.search-icon {
+  font-size: 40rpx;
+  margin-right: 16rpx;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 34rpx;
+  color: #333;
+  height: 80rpx;
+  line-height: 80rpx;
+}
+
+.search-btn {
+  background: #07c160;
+  color: #fff;
+  font-size: 30rpx;
+  padding: 16rpx 36rpx;
+  border-radius: 50rpx;
+  margin-left: 16rpx;
+  border-bottom: 6rpx solid rgba(0, 0, 0, 0.2);
+  transform: translateY(0);
+  transition: all 0.1s;
+}
+
+.search-btn.s-pressed {
+  border-bottom: 2rpx solid rgba(0, 0, 0, 0.15);
+  transform: translateY(4rpx);
+}
+
+@keyframes s-shake {
+  0%, 100% { transform: translateY(4rpx) translateX(0); }
+  15% { transform: translateY(4rpx) translateX(-3rpx); }
+  35% { transform: translateY(4rpx) translateX(3rpx); }
+  55% { transform: translateY(4rpx) translateX(-2rpx); }
+  75% { transform: translateY(4rpx) translateX(2rpx); }
+  90% { transform: translateY(4rpx) translateX(-1rpx); }
+}
+
+.search-btn.s-shaking {
+  animation: s-shake 0.35s ease;
+}
+
+/* 按钮行 */
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 24rpx;
+}
+
+.nav-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  height: 120rpx;
+  font-size: 34rpx;
+  font-weight: 600;
+  border-radius: 24rpx;
+  color: #333;
+  background: #fff;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+}
+
+.btn-emoji {
+  font-size: 44rpx;
+}
+
+.follow-btn .btn-emoji {
+  color: #ff4081;
+}
+
+/* 大按钮行，每行两个 */
+.category-row {
+  display: flex;
+  gap: 32rpx;
+  margin-top: 40rpx;
+}
+
+.big-cat-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28rpx;
+  height: 340rpx;
+  font-size: 56rpx;
+  font-weight: 700;
+  border-radius: 48rpx;
+  color: #fff;
+  border: none;
+  border-bottom: 14rpx solid rgba(0, 0, 0, 0.25);
+  box-shadow:
+    0 14rpx 0 rgba(0, 0, 0, 0.25),
+    0 16rpx 40rpx rgba(0, 0, 0, 0.15);
+  transform: translateY(0);
+  transition: all 0.1s;
+}
+
+.big-cat-btn.pressed {
+  border-bottom: 6rpx solid rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 6rpx 0 rgba(0, 0, 0, 0.2),
+    0 8rpx 20rpx rgba(0, 0, 0, 0.12);
+  transform: translateY(8rpx);
+}
+
+/* 点击抖动 */
+@keyframes shake {
+  0%, 100% { transform: translateY(8rpx) translateX(0); }
+  15% { transform: translateY(8rpx) translateX(-5rpx); }
+  35% { transform: translateY(8rpx) translateX(5rpx); }
+  55% { transform: translateY(8rpx) translateX(-4rpx); }
+  75% { transform: translateY(8rpx) translateX(4rpx); }
+  90% { transform: translateY(8rpx) translateX(-2rpx); }
+}
+
+.big-cat-btn.shaking {
+  animation: shake 0.35s ease;
+}
+
+.big-cat-emoji {
+  font-size: 110rpx;
+}
+
+/* 交际舞 - 琥珀金 */
+.ballroom-btn {
+  background: linear-gradient(135deg, #ffe082, #ff8f00);
+}
+
+/* 广场舞 - 玫瑰粉 */
+.square-btn {
+  background: linear-gradient(135deg, #fce4ec, #f06292);
+}
+
+/* 民族舞 - 珊瑚橘 */
+.folk-btn {
+  background: linear-gradient(135deg, #ffe0b2, #ff7043);
+}
+
+/* 养生保健 - 薄荷绿 */
+.health-btn {
+  background: linear-gradient(135deg, #b2dfdb, #26a69a);
+}
+
+/* Debug 齿轮入口（右下角悬浮） */
+.debug-gear {
+  position: fixed;
+  right: 32rpx;
+  bottom: 48rpx;
+  width: 88rpx;
+  height: 88rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.15);
+  z-index: 999;
+  opacity: 0.6;
+}
+
+.debug-gear:active {
+  opacity: 1;
+}
+
+.debug-gear-icon {
+  font-size: 48rpx;
+  line-height: 1;
+}
+
+@keyframes gear-spin {
+  from { transform: rotate(0); }
+  to { transform: rotate(360deg); }
+}
+
+.debug-gear.gear-spin .debug-gear-icon {
+  animation: gear-spin 0.5s linear;
+}

@@ -1,0 +1,55 @@
+<!--home.wxml-->
+<navigation-bar title="首页" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+<view class="page">
+  <!-- 搜索条 -->
+  <view class="search-bar">
+    <text class="search-icon">🔍</text>
+    <input class="search-input" placeholder="搜索内容..." bindinput="onSearchInput" value="{{keyword}}" />
+    <button class="search-btn {{shaking.search ? 's-pressed s-shaking' : ''}}" bindtap="doSearch">搜索</button>
+  </view>
+
+  <!-- 按钮行 -->
+  <view class="nav-row">
+    <button class="nav-btn follow-btn" bindtap="goFollow">
+      <text class="btn-emoji">💗</text>
+      <text>关注</text>
+    </button>
+    <button class="nav-btn history-btn" bindtap="goHistory">
+      <text class="btn-emoji">📋</text>
+      <text>历史</text>
+    </button>
+    <button class="nav-btn rank-btn" bindtap="goRank">
+      <text class="btn-emoji">🏆</text>
+      <text>排名</text>
+    </button>
+  </view>
+
+  <!-- 第一行：交际舞 + 广场舞 -->
+  <view class="category-row">
+    <button class="big-cat-btn ballroom-btn {{shaking.ballroom ? 'pressed shaking' : ''}}" bindtap="goBallroom">
+      <text class="big-cat-emoji">💫</text>
+      <text>交际舞</text>
+    </button>
+    <button class="big-cat-btn square-btn {{shaking.square ? 'pressed shaking' : ''}}" bindtap="goSquare">
+      <text class="big-cat-emoji">🎀</text>
+      <text>广场舞</text>
+    </button>
+  </view>
+
+  <!-- 第二行：民族舞 + 养生保健 -->
+  <view class="category-row">
+    <button class="big-cat-btn folk-btn {{shaking.folk ? 'pressed shaking' : ''}}" bindtap="goFolk">
+      <text class="big-cat-emoji">🏮</text>
+      <text>民族舞</text>
+    </button>
+    <button class="big-cat-btn health-btn {{shaking.health ? 'pressed shaking' : ''}}" bindtap="goHealth">
+      <text class="big-cat-emoji">🍃</text>
+      <text>养生操</text>
+    </button>
+  </view>
+</view>
+
+<!-- Debug 入口：姿态识别 -->
+<view class="debug-gear {{shaking.debug ? 'gear-spin' : ''}}" bindtap="goPose">
+  <text class="debug-gear-icon">⚙️</text>
+</view>

@@ -1,0 +1,142 @@
+/**history.wxss**/
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f5f5;
+}
+
+.page {
+  flex: 1;
+  padding: 24rpx 32rpx;
+}
+
+/* 统计卡片 */
+.stats-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 24rpx;
+  padding: 40rpx 20rpx;
+  margin-bottom: 32rpx;
+  box-shadow: 0 6rpx 24rpx rgba(102, 126, 234, 0.3);
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.stat-num {
+  font-size: 52rpx;
+  font-weight: 700;
+  color: #fff;
+}
+
+.stat-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* 列表标题 */
+.list-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 16rpx;
+}
+
+/* 记录列表 */
+.list-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+  padding-bottom: 48rpx;
+}
+
+.record-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.record-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.record-icon {
+  font-size: 44rpx;
+}
+
+.record-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.record-date {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #333;
+}
+
+.record-time {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.record-center {
+  padding: 0 12rpx;
+}
+
+.record-duration {
+  font-size: 26rpx;
+  color: #667eea;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.record-right {
+  flex: 1;
+  text-align: right;
+}
+
+.record-thanks {
+  font-size: 24rpx;
+  color: #f0a500;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 空态 */
+.empty-tip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 200rpx;
+  gap: 16rpx;
+}
+
+.empty-emoji {
+  font-size: 80rpx;
+}
+
+.empty-text {
+  font-size: 30rpx;
+  color: #999;
+}

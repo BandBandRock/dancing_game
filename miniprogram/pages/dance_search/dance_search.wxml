@@ -1,0 +1,108 @@
+<!--dance_search.wxml 舞种搜索落地页-->
+<navigation-bar title="{{subTitle || '搜索'}}" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<scroll-view class="scrollarea" scroll-y type="list">
+  <view class="home">
+    <!-- 搜索歌曲类型入口 -->
+    <view class="search-bar">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="{{isScoped ? '搜索' + subTitle + '歌曲' : '搜索歌曲 / 类型'}}"
+        placeholder-class="ph"
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+      />
+      <text wx:if="{{keyword}}" class="search-clear" bindtap="onClear">✕</text>
+    </view>
+
+    <!-- 小标题：从首页带过来的舞种名称 -->
+    <view wx:if="{{isScoped}}" class="sub-title">{{subTitle}}</view>
+
+    <!-- 搜索时 / 带舞种进入时显示：类型筛选 + 歌曲列表 -->
+    <block wx:if="{{keyword || isScoped}}">
+      <scroll-view wx:if="{{!isScoped}}" class="type-scroll" scroll-x="true">
+        <view
+          wx:for="{{types}}"
+          wx:key="*this"
+          class="type-chip {{activeType === item ? 'active' : ''}}"
+          bindtap="onTypeTap"
+          data-type="{{item}}"
+        >{{item}}</view>
+      </scroll-view>
+
+      <view class="song-list">
+        <view
+          wx:for="{{filtered}}"
+          wx:key="name"
+          class="song-item"
+          bindtap="onSongTap"
+          data-name="{{item.name}}"
+        >
+          <view class="play-btn">▶</view>
+          <view class="song-info">
+            <text class="song-name">{{item.name}}</text>
+            <text class="song-sub">{{item.artist}} · {{item.duration}}</text>
+          </view>
+          <text class="song-type">{{item.type}}</text>
+        </view>
+        <view wx:if="{{filtered.length === 0}}" class="empty">没有找到相关歌曲</view>
+      </view>
+    </block>
+
+    <!-- 搜索框下方空白区：推荐广场舞竖屏视频（未打开时显示封面） -->
+    <view
+      wx:if="{{!keyword && (!isScoped || activeType === '广场舞')}}"
+      class="rec-section"
+    >
+      <view class="rec-head">
+        <text class="rec-title">广场舞 · 竖屏教学</text>
+        <text class="rec-more">更多 ›</text>
+      </view>
+      <view class="rec-grid">
+        <view
+          wx:for="{{recommendVideos}}"
+          wx:key="title"
+          class="rec-card"
+          bindtap="onOpenRecVideo"
+          data-title="{{item.title}}"
+        >
+          <view class="rec-cover">
+            <image wx:if="{{item.cover}}" class="rec-cover-img" src="{{item.cover}}" mode="aspectFill" />
+            <view wx:else class="rec-cover-ph">
+              <text class="rec-emoji">💃</text>
+            </view>
+            <text class="rec-badge">竖屏</text>
+            <view class="rec-play">▶</view>
+            <text class="rec-dur">03:32</text>
+          </view>
+          <text class="rec-name">{{item.title}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+</scroll-view>
+
+<!-- 视频播放层（videoFull=true 时为满屏播放） -->
+<view wx:if="{{showVideo}}" class="video-mask {{videoFull ? 'full' : ''}}">
+  <view class="video-panel {{videoFull ? 'full' : ''}}">
+    <view wx:if="{{videoFull}}" class="video-close-float" bindtap="onCloseVideo">✕</view>
+    <view class="video-head {{videoFull ? 'full' : ''}}">
+      <text class="video-title">{{currentSong}}</text>
+      <view class="video-tags">
+        <text class="video-type">{{currentType}}</text>
+        <text class="video-badge">示例视频</text>
+      </view>
+    </view>
+    <video
+      class="video-player {{videoFull ? 'full' : ''}}"
+      src="{{currentVideo}}"
+      autoplay="{{true}}"
+      controls="{{true}}"
+      show-center-play-btn="{{true}}"
+      object-fit="contain"
+    ></video>
+    <view wx:if="{{!videoFull}}" class="video-tip">替换为您自己的舞曲视频即可精准匹配</view>
+    <view wx:if="{{!videoFull}}" class="video-close" bindtap="onCloseVideo">关闭</view>
+  </view>
+</view>

@@ -1,15 +1,29 @@
 {
   "pages": [
+    "pages/home/home",
     "pages/index/index",
-    "pages/pose/pose",
-    "pages/logs/logs"
+    "pages/logs/logs",
+    "pages/follow/follow",
+    "pages/history/history",
+    "pages/rank/rank",
+    "pages/search/search",
+    "pages/dance_search/dance_search",
+    "pages/pose/pose"
   ],
   "window": {
     "navigationBarTextStyle": "black",
-    "navigationBarTitleText": "Weixin",
-    "navigationBarBackgroundColor": "#ffffff"
+    "navigationStyle": "custom"
   },
   "style": "v2",
+  "rendererOptions": {
+    "skyline": {
+      "defaultDisplayBlock": true,
+      "disableABTest": true,
+      "sdkVersionBegin": "3.0.0",
+      "sdkVersionEnd": "15.255.255"
+    }
+  },
   "componentFramework": "glass-easel",
+  "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }

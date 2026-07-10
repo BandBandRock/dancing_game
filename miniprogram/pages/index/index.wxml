@@ -1,4 +1,5 @@
 <!--index.wxml-->
+<navigation-bar title="Weixin" back="{{false}}" color="black" background="#FFF"></navigation-bar>
 <scroll-view class="scrollarea" scroll-y type="list">
   <view class="container">
     <view class="userinfo">
@@ -23,6 +24,8 @@
     <view class="usermotto">
       <text class="user-motto">{{motto}}</text>
     </view>
-    <button class="pose-entry" bindtap="goPose">开始姿态识别</button>
+    <view class="login-area">
+      <button class="login-btn" bindtap="doLogin">登陆</button>
+    </view>
   </view>
 </scroll-view>

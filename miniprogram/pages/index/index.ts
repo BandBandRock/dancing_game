@@ -21,11 +21,6 @@ Component({
         url: '../logs/logs',
       })
     },
-    goPose() {
-      wx.navigateTo({
-        url: '../pose/pose',
-      })
-    },
     onChooseAvatar(e: any) {
       const { avatarUrl } = e.detail
       const { nickName } = this.data.userInfo
@@ -53,6 +48,33 @@ Component({
             hasUserInfo: true
           })
         }
+      })
+    },
+    doLogin() {
+      wx.login({
+        success: (res) => {
+          if (res.code) {
+            wx.showToast({
+              title: '登录成功',
+              icon: 'success',
+            })
+            console.log('登录 code:', res.code)
+            wx.navigateTo({
+              url: '../home/home',
+            })
+          } else {
+            wx.showToast({
+              title: '登录失败',
+              icon: 'error',
+            })
+          }
+        },
+        fail: () => {
+          wx.showToast({
+            title: '登录失败',
+            icon: 'error',
+          })
+        },
       })
     },
   },

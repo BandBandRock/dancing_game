@@ -1,0 +1,45 @@
+<!--history.wxml-->
+<navigation-bar title="历史 - 登录记录" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<scroll-view class="page" scroll-y type="list">
+  <!-- 统计卡片 -->
+  <view class="stats-card">
+    <view class="stat-item">
+      <text class="stat-num">{{totalCount}}</text>
+      <text class="stat-label">登录次数</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-num">{{totalHours}}</text>
+      <text class="stat-label">累计时长(小时)</text>
+    </view>
+  </view>
+
+  <!-- 登录记录列表 -->
+  <view class="list-title">登录记录</view>
+  <view class="list-area" wx:if="{{records.length > 0}}">
+    <view
+      class="record-item"
+      wx:for="{{records}}"
+      wx:key="id"
+    >
+      <view class="record-left">
+        <text class="record-icon">{{item.icon}}</text>
+        <view class="record-info">
+          <text class="record-date">{{item.date}}</text>
+          <text class="record-time">{{item.time}}</text>
+        </view>
+      </view>
+      <view class="record-center">
+        <text class="record-duration">{{item.duration}}</text>
+      </view>
+      <view class="record-right">
+        <text class="record-thanks">{{item.thanks}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="empty-tip" wx:else>
+    <text class="empty-emoji">📭</text>
+    <text class="empty-text">暂无登录记录</text>
+  </view>
+</scroll-view>
