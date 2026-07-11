@@ -33,11 +33,11 @@
       data-rate="0.5"
     >0.5x</view>
     <view
-      class="speed-tag {{rate === 1 ? 'speed-tag-on' : ''}} {{shaking.s1 ? 'tag-shake' : ''}}"
+      class="speed-tag {{rate === 0.8 ? 'speed-tag-on' : ''}} {{shaking.s08 ? 'tag-shake' : ''}}"
       hover-class="tag-hover"
       bindtap="setRate"
-      data-rate="1"
-    >1x</view>
+      data-rate="0.8"
+    >0.8x</view>
   </view>
   <view wx:else class="main-empty">
     <text class="main-empty-text">未选择教学视频</text>

@@ -22,7 +22,27 @@ const MIME = {
   '.ts': 'video/mp2t',
 }
 
-// 统一处理普通 / Range 请求的视频流式输出
+// —— 上传目录 ——
+const UPLOADS_DIR = path.join(ROOT, 'upload')
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+}
+
+// 上传记录（内存 + JSON 持久化）
+const MANIFEST_PATH = path.join(__dirname, 'upload-manifest.json')
+let uploadManifest = []
+try {
+  const raw = fs.readFileSync(MANIFEST_PATH, 'utf8')
+  uploadManifest = JSON.parse(raw)
+} catch (e) {
+  uploadManifest = []
+}
+
+function saveManifest() {
+  fs.writeFileSync(MANIFEST_PATH, JSON.stringify(uploadManifest, null, 2), 'utf8')
+}
+
+// 统一流式响应视频
 function streamFile(res, filePath, total, range, type) {
   if (range) {
     const m = /bytes=(\d*)-(\d*)/.exec(range)
@@ -51,11 +71,93 @@ function streamFile(res, filePath, total, range, type) {
 }
 
 const server = http.createServer((req, res) => {
+  // —— CORS（允许小程序开发工具跨域）——
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204)
+    res.end()
+    return
+  }
+
+  // —— POST /upload —— 接收视频上传
+  if (req.method === 'POST' && req.url === '/upload') {
+    const contentType = req.headers['content-type'] || ''
+    if (!contentType.includes('multipart/form-data')) {
+      res.writeHead(400, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ code: 1, msg: '需 multipart/form-data 格式' }))
+      return
+    }
+
+    const boundary = '--' + contentType.split('boundary=')[1]
+    const bufs = []
+    req.on('data', (chunk) => bufs.push(chunk))
+    req.on('end', () => {
+      const raw = Buffer.concat(bufs)
+
+      // 简易 multipart 解析
+      const parts = splitMultipart(raw, boundary)
+      let fileName = ''
+      let fileData = null
+      let danceType = ''
+
+      for (const part of parts) {
+        const headerEnd = part.indexOf('\r\n\r\n')
+        if (headerEnd === -1) continue
+        const header = part.slice(0, headerEnd).toString('utf8')
+        const body = part.slice(headerEnd + 4)
+
+        if (header.includes('name="type"')) {
+          danceType = body.toString('utf8').replace(/\r?\n/g, '').trim()
+        } else if (header.includes('name="video"') && header.includes('filename')) {
+          const fnMatch = header.match(/filename="([^"]*)"/)
+          const ext = fnMatch ? path.extname(fnMatch[1]) : '.mp4'
+          // 去除末尾的 \r\n
+          fileData = body.slice(0, body.length - 2)
+          const ts = Date.now()
+          fileName = `upload_${ts}${ext}`
+        }
+      }
+
+      if (!fileData) {
+        res.writeHead(400, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ code: 1, msg: '未收到视频文件' }))
+        return
+      }
+
+      const savePath = path.join(UPLOADS_DIR, fileName)
+      fs.writeFileSync(savePath, fileData)
+
+      const record = {
+        id: uploadManifest.length + 1,
+        name: fileName,
+        type: danceType || '未分类',
+        url: `/upload/${fileName}`,
+        createTime: new Date().toISOString(),
+      }
+      uploadManifest.push(record)
+      saveManifest()
+
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ code: 0, msg: '上传成功', data: record }))
+    })
+    return
+  }
+
+  // —— GET /upload-manifest —— 获取上传列表
+  if (req.method === 'GET' && req.url === '/upload-manifest') {
+    res.writeHead(200, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ code: 0, data: uploadManifest }))
+    return
+  }
+
+  // —— 静态文件 ——
   let urlPath = decodeURIComponent((req.url || '/').split('?')[0])
   if (urlPath === '/') urlPath = '/index.html'
 
   const filePath = path.normalize(path.join(ROOT, urlPath))
-  // 防目录穿越
   if (!filePath.startsWith(ROOT)) {
     res.writeHead(403)
     res.end('Forbidden')
@@ -64,17 +166,15 @@ const server = http.createServer((req, res) => {
 
   fs.stat(filePath, (err, stat) => {
     if (err || !stat.isFile()) {
-      // 兜底：请求的真实视频（如 gcd-01.mp4）尚未上传到云服务器时，
-      // 按舞种前缀回退到该舞种的「示例占位视频」，避免预览黑屏；
-      // 不同舞种对应不同片段，便于区分、不再"每首都一样"。
-      const base = path.basename(urlPath) // gcd-01.mp4
-      const prefix = base.split('-')[0] // gcd
+      // 兜底回退
+      const base = path.basename(urlPath)
+      const prefix = base.split('-')[0]
       const map = {
-        gcd: 'bbb.mp4', // 广场舞
-        jyx: 'flower.mp4', // 交谊舞
-        mz: 'sintel.mp4', // 民族舞
-        js: 'jellyfish.mp4', // 健身操
-        gb: 'bbb.mp4', // 鬼步舞
+        gcd: 'bbb.mp4',
+        jyx: 'flower.mp4',
+        mz: 'sintel.mp4',
+        js: 'jellyfish.mp4',
+        gb: 'bbb.mp4',
       }
       const fallbackName = map[prefix] || 'bbb.mp4'
       const fallback = path.join(ROOT, 'video', fallbackName)
@@ -95,5 +195,36 @@ const server = http.createServer((req, res) => {
 })
 
 server.listen(PORT, '127.0.0.1', () => {
-  console.log(`[dev-video] 视频服务已启动: http://127.0.0.1:${PORT}/video/`)
+  console.log(`[dev-video] 视频服务已启动: http://127.0.0.1:${PORT}/`)
+  console.log(`[dev-video] 上传地址: POST http://127.0.0.1:${PORT}/upload`)
 })
+
+// —— 简易 multipart 解析 ——
+function splitMultipart(buf, boundary) {
+  const b = Buffer.from(boundary)
+  const parts = []
+  let start = 0
+  while (true) {
+    const idx = buf.indexOf(b, start)
+    if (idx === -1) break
+    const partStart = idx + b.length
+    // 跳过开头的 \r\n
+    const contentStart = buf[partStart] === 13 ? partStart + 2 : partStart
+    const nextIdx = buf.indexOf(b, contentStart)
+    if (nextIdx === -1) {
+      // 最后一部分（末尾有 --）
+      const endMarker = Buffer.from('--')
+      const endIdx = buf.indexOf(endMarker, contentStart)
+      if (endIdx > contentStart) {
+        parts.push(buf.slice(contentStart, endIdx > contentStart ? endIdx - 2 : buf.length))
+      }
+      break
+    }
+    // 去掉末尾的 \r\n
+    let end = nextIdx
+    while (end > contentStart && (buf[end - 1] === 13 || buf[end - 1] === 10)) end--
+    parts.push(buf.slice(contentStart, end))
+    start = nextIdx
+  }
+  return parts
+}

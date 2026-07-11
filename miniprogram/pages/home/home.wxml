@@ -17,13 +17,19 @@
         wx:for="{{filtered}}"
         wx:key="name"
         bindtap="onResultTap"
-        data-name="{{item.name}}"
+        data-index="{{index}}"
       >
         <view class="search-item-play">▶</view>
         <view class="search-item-info">
           <text class="search-item-name">{{item.name}}</text>
           <text class="search-item-sub">{{item.artist}} · {{item.duration}}</text>
         </view>
+        <view
+          class="fav-btn {{favoritedKeys[item.name + '|' + item.type] ? 'fav-on' : ''}}"
+          catchtap="toggleFavorite"
+          data-key="{{item.name + '|' + item.type}}"
+          data-index="{{index}}"
+        >{{favoritedKeys[item.name + '|' + item.type] ? '❤️' : '🤍'}}</view>
         <text class="search-item-type">{{item.type}}</text>
       </view>
     </view>
@@ -38,7 +44,7 @@
     <view class="nav-row">
       <button class="nav-btn follow-btn" bindtap="goFollow">
         <text class="btn-emoji">💗</text>
-        <text>关注</text>
+        <text>收藏</text>
       </button>
       <button class="nav-btn history-btn" bindtap="goHistory">
         <text class="btn-emoji">📋</text>
@@ -74,6 +80,11 @@
       </button>
     </view>
   </block>
+</view>
+
+<!-- 上传舞蹈按钮（页面底部） -->
+<view class="upload-area">
+  <button class="upload-btn" bindtap="onUploadTap">📤 上传舞蹈</button>
 </view>
 
 <!-- Debug 入口：姿态识别 -->

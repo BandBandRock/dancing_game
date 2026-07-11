@@ -55,6 +55,25 @@ page {
   border-radius: 50rpx;
   margin-left: 12rpx;
   border: none;
+  transition: all 0.1s;
+}
+
+.search-btn.s-pressed {
+  transform: scale(0.95);
+  box-shadow: inset 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+}
+
+@keyframes s-shake {
+  0%, 100% { transform: scale(0.95) translateX(0); }
+  15% { transform: scale(0.95) translateX(-3rpx); }
+  35% { transform: scale(0.95) translateX(3rpx); }
+  55% { transform: scale(0.95) translateX(-2rpx); }
+  75% { transform: scale(0.95) translateX(2rpx); }
+  90% { transform: scale(0.95) translateX(-1rpx); }
+}
+
+.search-btn.s-shaking {
+  animation: s-shake 0.35s ease;
 }
 
 /* 搜索结果 */
@@ -120,7 +139,26 @@ page {
   padding: 6rpx 18rpx;
   border-radius: 20rpx;
   flex-shrink: 0;
-  margin-left: 16rpx;
+  margin-left: 12rpx;
+}
+
+/* 收藏按钮 */
+.fav-btn {
+  font-size: 32rpx;
+  padding: 4rpx 8rpx;
+  transition: transform 0.2s;
+  flex-shrink: 0;
+}
+.fav-btn:active {
+  transform: scale(1.3);
+}
+.fav-btn.fav-on {
+  animation: heartPop 0.3s ease;
+}
+@keyframes heartPop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.4); }
+  100% { transform: scale(1); }
 }
 
 /* 空态 */

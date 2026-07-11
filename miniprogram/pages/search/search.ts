@@ -10,7 +10,8 @@ interface Song {
 const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
 
 function resolveVideo(video: string): string {
-  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+  if (video.includes('://') || video.includes('/')) return video
+  return VIDEO_BASE + video
 }
 
 const ALL_SONGS: Song[] = [
@@ -89,10 +90,18 @@ Component({
   data: {
     keyword: '',
     results: [] as Song[],
+    favoritedKeys: {} as Record<string, boolean>,
+    shaking: {
+      search: false,
+    },
   },
 
   lifetimes: {
     attached() {
+      // 加载收藏状态
+      const fav = wx.getStorageSync('favorite_songs') || {}
+      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+
       // 从首页带入的关键词
       const pages = getCurrentPages()
       const currentPage = pages[pages.length - 1]
@@ -106,6 +115,20 @@ Component({
   },
 
   methods: {
+    getSongs() {
+      // 内置歌曲 + 用户上传的歌曲
+      const uploadList = wx.getStorageSync('uploaded_videos')
+      const list = Array.isArray(uploadList) ? uploadList : []
+      const uploaded: Song[] = list.map((item: any) => ({
+        name: item.name,
+        artist: '用户上传',
+        type: item.type || '未分类',
+        duration: item.duration || '00:00',
+        video: item.video,
+      }))
+      return [...ALL_SONGS, ...uploaded]
+    },
+
     onKeywordInput(e: any) {
       this.setData({ keyword: e.detail.value })
     },
@@ -115,10 +138,15 @@ Component({
     },
 
     doSearch() {
+      this.setData({ 'shaking.search': true })
+      setTimeout(() => {
+        this.setData({ 'shaking.search': false })
+      }, 350)
       const kw = this.data.keyword.trim().toLowerCase()
       if (!kw) { this.setData({ results: [] }); return }
 
-      const results = ALL_SONGS.filter((s) =>
+      const allSongs = this.getSongs()
+      const results = allSongs.filter((s) =>
         s.name.toLowerCase().includes(kw) ||
         s.artist.toLowerCase().includes(kw) ||
         s.type.includes(kw)
@@ -127,13 +155,52 @@ Component({
     },
 
     onSongTap(e: any) {
-      const name = e.currentTarget.dataset.name as string
-      const song = ALL_SONGS.find((s) => s.name === name)
+      const index = e.currentTarget.dataset.index
+      const results = this.data.results
+      if (index === undefined || index < 0 || index >= results.length) return
+      const song = results[index]
       if (!song) return
       const videoUrl = resolveVideo(song.video)
       wx.navigateTo({
         url: `../dance_search/dance_search?video=${encodeURIComponent(videoUrl)}&song=${encodeURIComponent(song.name)}&type=${encodeURIComponent(song.type)}`,
       })
+    },
+
+    // 切换收藏
+    toggleFavorite(e: any) {
+      const key = e.currentTarget.dataset.key as string
+      const index = e.currentTarget.dataset.index
+      const results = this.data.results
+      if (index === undefined || index < 0 || index >= results.length) return
+      const song = results[index]
+
+      const fav = { ...this.data.favoritedKeys }
+      const list = wx.getStorageSync('favorite_songs_list') || []
+      const arr = Array.isArray(list) ? list : []
+
+      if (fav[key]) {
+        delete fav[key]
+        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
+        wx.setStorageSync('favorite_songs_list', newList)
+        wx.showToast({ title: '取消收藏', icon: 'none' })
+      } else {
+        fav[key] = true
+        const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
+        if (!exists) {
+          arr.push({
+            name: song.name,
+            artist: song.artist,
+            type: song.type,
+            duration: song.duration,
+            video: song.video,
+            favoritedAt: Date.now(),
+          })
+          wx.setStorageSync('favorite_songs_list', arr)
+        }
+        wx.showToast({ title: '已收藏', icon: 'success' })
+      }
+      this.setData({ favoritedKeys: fav })
+      wx.setStorageSync('favorite_songs', fav)
     },
   },
 })

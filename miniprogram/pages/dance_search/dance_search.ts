@@ -19,9 +19,10 @@ interface Song {
 // ============================================================
 const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
 
-// 解析视频完整地址：video 已是绝对地址（http/https）则直接用，否则拼 VIDEO_BASE
+// 解析视频完整地址：video 已是完整路径（http/https/wxfile/store/本地路径）则直接用，否则拼 VIDEO_BASE
 function resolveVideo(video: string): string {
-  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+  if (video.includes('://') || video.includes('/')) return video
+  return VIDEO_BASE + video
 }
 
 Component({
@@ -108,13 +109,15 @@ Component({
     subTitle: '',
     isScoped: false,
     videoFull: false, // true=满屏播放（推荐视频），false=居中卡片（歌曲）
-    rate: 1,
+    rate: 0.8,
     shaking: {
       rate05: false,
-      rate1: false,
+      rate08: false,
     },
     fireworkActive: false,
     showPraise: false,
+    // 收藏状态
+    favoritedKeys: {} as Record<string, boolean>,
     // 推荐视频：竖屏广场舞。cover 留空时用渐变占位封面；
     // 正式上线把 cover 换成云服务器封面图地址、video 换成对应视频文件名即可。
     recommendVideos: [
@@ -128,6 +131,15 @@ Component({
   },
   methods: {
     onLoad(options: any) {
+      // 加载用户上传的视频，合并到歌曲列表（同步合并，避免 setData 异步问题）
+      const uploadedSongs = this.getUploadedSongs()
+      const allSongs = [...this.data.songs, ...uploadedSongs]
+      this.setData({ songs: allSongs })
+      console.log('[dance_search] allSongs count:', allSongs.length, 'isScoped will be:', options && options.type)
+
+      // 加载收藏状态
+      this.loadFavorites()
+
       // 从首页带舞种参数跳进来：?type=广场舞
       if (options && options.type) {
         const type = decodeURIComponent(options.type)
@@ -147,11 +159,86 @@ Component({
             currentType: type,
             videoFull: false,
             showVideo: true,
-            rate: 1,
+            rate: 0.8,
           })
         }
       }
       this.applyFilter()
+    },
+
+    // 获取用户上传的歌曲列表（同步）
+    getUploadedSongs(): Song[] {
+      try {
+        const uploadList = wx.getStorageSync('uploaded_videos')
+        console.log('[dance_search] getUploadedSongs raw:', JSON.stringify(uploadList))
+        if (!uploadList) return []
+        const list = Array.isArray(uploadList) ? uploadList : []
+        return list.map((item: any) => ({
+          name: item.name,
+          artist: '用户上传',
+          type: item.type || '未分类',
+          duration: item.duration || '00:00',
+          video: item.video,
+        }))
+      } catch (e) {
+        console.error('[getUploadedSongs] fail', e)
+        return []
+      }
+    },
+
+    // 加载收藏状态
+    loadFavorites() {
+      const fav = wx.getStorageSync('favorite_songs') || {}
+      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+    },
+
+    // 切换收藏
+    toggleFavorite(e: any) {
+      const key = e.currentTarget.dataset.key as string
+      const index = e.currentTarget.dataset.index
+
+      // 从 songs 里找到对应歌曲信息
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
+
+      const fav = { ...this.data.favoritedKeys }
+      if (fav[key]) {
+        delete fav[key]
+        // 也从收藏列表中移除
+        const list = wx.getStorageSync('favorite_songs_list') || []
+        const arr = Array.isArray(list) ? list : []
+        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
+        wx.setStorageSync('favorite_songs_list', newList)
+        wx.showToast({ title: '取消收藏', icon: 'none' })
+      } else {
+        fav[key] = true
+        // 保存完整的歌曲信息到收藏列表
+        this.saveFavoriteSong(song)
+        wx.showToast({ title: '已收藏', icon: 'success' })
+      }
+      this.setData({ favoritedKeys: fav })
+      wx.setStorageSync('favorite_songs', fav)
+    },
+
+    // 保存收藏的完整歌曲信息
+    saveFavoriteSong(song: any) {
+      const list = wx.getStorageSync('favorite_songs_list') || []
+      const arr = Array.isArray(list) ? list : []
+      // 不重复添加
+      const key = song.name + '|' + song.type
+      const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
+      if (!exists) {
+        arr.push({
+          name: song.name,
+          artist: song.artist,
+          type: song.type,
+          duration: song.duration,
+          video: song.video,
+          favoritedAt: Date.now(),
+        })
+        wx.setStorageSync('favorite_songs_list', arr)
+      }
     },
 
     // 搜索输入
@@ -175,8 +262,10 @@ Component({
 
     // 点击歌曲 → 播放对应视频（居中卡片样式）
     onSongTap(e: any) {
-      const name = e.currentTarget.dataset.name as string
-      const song = this.data.songs.find((s) => s.name === name)
+      const index = e.currentTarget.dataset.index
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
       if (!song) return
       this.setData({
         currentVideo: resolveVideo(song.video),
@@ -184,7 +273,7 @@ Component({
         currentType: song.type,
         videoFull: false,
         showVideo: true,
-        rate: 1,
+        rate: 0.8,
         fireworkActive: false,
         showPraise: false,
       })
@@ -202,7 +291,7 @@ Component({
         currentType: v.type,
         videoFull: true,
         showVideo: true,
-        rate: 1,
+        rate: 0.8,
         fireworkActive: false,
         showPraise: false,
       })
@@ -213,14 +302,14 @@ Component({
     onGoDance() {
       if (!this.data.currentVideo) return
       wx.navigateTo({
-        url: `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}&song=${encodeURIComponent(this.data.currentSong)}`,
+        url: `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}&song=${encodeURIComponent(this.data.currentSong)}&rate=${this.data.rate}`,
       })
     },
 
     // 关闭视频
     onCloseVideo() {
       this.stopFirework()
-      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 1, fireworkActive: false, showPraise: false })
+      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
     },
 
     // 视频播放结束 → 礼花 + 你真棒
@@ -351,7 +440,7 @@ Component({
       if (rate === this.data.rate) return
 
       // 按钮颤动 key
-      const keyMap: Record<number, string> = { 0.5: 'rate05', 1: 'rate1' }
+      const keyMap: Record<number, string> = { 0.5: 'rate05', 0.8: 'rate08' }
       const key = keyMap[rate]
       if (key) {
         this.setData({ [`shaking.${key}`]: true })
