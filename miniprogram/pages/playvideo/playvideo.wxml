@@ -1,67 +1,74 @@
-<!--pages/playvideo/playvideo.wxml 横屏：左侧双视频 + 右侧信息面板-->
-<view class="root">
-  <!-- 左侧：双视频区域 -->
-  <view class="left-area" wx:if="{{ready}}">
-    <!-- 教练视频 -->
-    <view class="video-col">
-      <text class="col-label">教练</text>
-      <video
-        wx:if="{{teachVideo}}"
-        id="teachPlayer"
-        class="col-video"
-        src="{{teachVideo}}"
-        autoplay="{{true}}"
-        controls="{{true}}"
-        show-center-play-btn="{{true}}"
-        object-fit="contain"
-        bindplay="onTeachPlay"
-      ></video>
-      <view wx:else class="col-empty">无教练视频</view>
-    </view>
-    <!-- 我的视频 -->
-    <view class="video-col">
-      <text class="col-label">我的</text>
-      <video
-        wx:if="{{userVideo}}"
-        class="col-video"
-        src="{{userVideo}}"
-        autoplay="{{true}}"
-        controls="{{true}}"
-        show-center-play-btn="{{true}}"
-        object-fit="contain"
-      ></video>
-      <view wx:else class="col-empty">无录制视频</view>
-    </view>
-  </view>
-  <view wx:else class="left-area loading-area">
-    <text class="loading-text">加载中...</text>
+<!--pages/playvideo/playvideo.wxml 竖屏视频回放-->
+<view class="page">
+  <!-- 退出 -->
+  <view class="top-bar">
+    <view class="exit-btn" bindtap="onExit">✕</view>
   </view>
 
-  <!-- 右侧：信息面板 -->
-  <view class="right-panel">
-    <view class="info-block">
-      <text class="info-song">{{song}}</text>
-    </view>
-    <view class="info-block score-block">
+  <!-- 信息卡片 -->
+  <view class="card">
+    <text class="card-title">{{song}}</text>
+    <view class="card-score">
       <text class="score-label">得分</text>
       <text class="score-num">{{score}}</text>
     </view>
-    <view class="info-block">
-      <text class="info-date">{{date}}</text>
-      <text class="info-time">{{timeText}}</text>
+    <view class="card-meta" wx:if="{{date}}">
+      <text class="meta-text">{{date}} {{timeText}}</text>
     </view>
-    <view class="info-block">
-      <text class="info-rate">倍速 {{rate}}x</text>
-    </view>
-    <!-- 操作按钮 -->
-    <view class="action-btns">
-      <button class="action-btn share-btn" open-type="share">分享视频</button>
-      <view class="action-btn redance-btn" bindtap="onRedance">再跳一次</view>
+    <view class="card-meta" wx:if="{{rate !== 1}}">
+      <text class="meta-text">倍速 {{rate}}x</text>
     </view>
   </view>
 
-  <!-- 退出按钮（左上角） -->
-  <view class="exit-btn" bindtap="onExit">
-    <text class="exit-icon">✕</text>
+  <!-- 操作按钮 -->
+  <view class="actions">
+    <view class="btn btn-play" bindtap="onPlay">
+      <text class="btn-icon">▶</text>
+      <text class="btn-text">播放视频</text>
+    </view>
+    <button class="btn btn-share" open-type="share">
+      <text class="btn-icon">📤</text>
+      <text class="btn-text">分享视频</text>
+    </button>
+    <view class="btn btn-dance" bindtap="onRedance">
+      <text class="btn-icon">🕺</text>
+      <text class="btn-text">再跳一次</text>
+    </view>
+  </view>
+</view>
+
+<!-- 播放浮层：双视频对比 -->
+<view wx:if="{{playing}}" class="play-mask">
+  <view class="play-panel">
+    <view class="play-row">
+      <view class="play-col">
+        <text class="play-label">教练</text>
+        <video
+          wx:if="{{teachUrl}}"
+          id="teachPlayer"
+          class="play-video"
+          src="{{teachUrl}}"
+          autoplay="{{true}}"
+          controls="{{true}}"
+          object-fit="contain"
+          bindplay="onTeachPlay"
+        ></video>
+        <view wx:else class="play-empty">无教练视频</view>
+      </view>
+      <view class="play-col">
+        <text class="play-label">我的</text>
+        <video
+          wx:if="{{userUrl}}"
+          class="play-video"
+          src="{{userUrl}}"
+          autoplay="{{true}}"
+          controls="{{true}}"
+          object-fit="contain"
+          muted="{{true}}"
+        ></video>
+        <view wx:else class="play-empty">无录制视频</view>
+      </view>
+    </view>
+    <view class="play-close" bindtap="onClosePlay">✕ 关闭</view>
   </view>
 </view>

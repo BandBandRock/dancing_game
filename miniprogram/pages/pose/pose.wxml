@@ -30,20 +30,9 @@
   ></canvas>
   <view wx:if="{{showPraise}}" class="praise-text">你真棒</view>
 
-  <!-- 倍速选择栏 -->
-  <view wx:if="{{danceVideo && !aligning && !counting}}" class="speed-panel">
-    <view
-      class="speed-tag {{rate === 0.5 ? 'speed-tag-on' : ''}} {{shaking.s05 ? 'tag-shake' : ''}}"
-      hover-class="tag-hover"
-      bindtap="setRate"
-      data-rate="0.5"
-    >0.5x</view>
-    <view
-      class="speed-tag {{rate === 0.8 ? 'speed-tag-on' : ''}} {{shaking.s08 ? 'tag-shake' : ''}}"
-      hover-class="tag-hover"
-      bindtap="setRate"
-      data-rate="0.8"
-    >0.8x</view>
+  <!-- 当前倍速显示（仅 0.5x 时显示） -->
+  <view wx:if="{{danceVideo && !aligning && !counting && rate === 0.5}}" class="speed-panel">
+    <view class="speed-tag speed-tag-on">{{rate}}x</view>
   </view>
   <view wx:else class="main-empty">
     <text class="main-empty-text">未选择教学视频</text>
@@ -132,6 +121,17 @@
     </view>
   </view>
 
-  <!-- 结束跳舞按钮（跳舞中显示） -->
-  <view wx:if="{{started && !ended}}" class="end-btn" hover-class="end-btn-active" bindtap="finishDance">结束跳舞</view>
+
+
+  <!-- 右下角暂停按钮 -->
+  <view class="stop-btn" bindtap="onPause">停一下</view>
+
+  <!-- 暂停弹窗 -->
+  <view wx:if="{{paused}}" class="pause-mask">
+    <view class="pause-modal">
+      <text class="pause-title">暂停中</text>
+      <view class="pause-btn pause-restart" bindtap="onRestart">重新开始</view>
+      <view class="pause-btn pause-back" bindtap="onGoBack">返回</view>
+    </view>
+  </view>
 </view>

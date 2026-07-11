@@ -1,0 +1,27 @@
+<!--pages/tools/fill-duration.wxml-->
+<view class="page">
+  <view class="title">视频时长填充工具</view>
+  <view class="status">{{status}}</view>
+  <view wx:if="{{currentName}}" class="current">正在处理：{{currentName}} ({{progress}})</view>
+
+  <button class="start-btn" bindtap="onStart">开始</button>
+
+  <!-- 结果列表 -->
+  <view class="result-list" wx:if="{{results.length > 0}}">
+    <view class="result-item" wx:for="{{results}}" wx:key="name">
+      <text>{{item.name}}</text>
+      <text class="dur">{{item.duration}}</text>
+    </view>
+  </view>
+
+  <!-- 隐藏的 video 组件用于探测时长 -->
+  <video
+    wx:if="{{probeUrl}}"
+    class="probe-video"
+    src="{{probeUrl}}"
+    autoplay="{{false}}"
+    controls="{{false}}"
+    muted="{{true}}"
+    bindloadedmetadata="onMeta"
+  ></video>
+</view>

@@ -13,7 +13,8 @@
     "pages/skelview/skelview",
     "pages/feedback/feedback",
     "pages/shared/shared",
-    "pages/upload/upload"
+    "pages/upload/upload",
+    "pages/tools/fill-duration"
   ],
   "window": {
     "navigationBarTextStyle": "black",

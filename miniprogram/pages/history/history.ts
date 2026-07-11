@@ -213,5 +213,45 @@ Component({
         },
       })
     },
+
+    // 再跳一次
+    onRedance(e: any) {
+      const id = e.currentTarget.dataset.id as string
+      const rec = this.data.list.find((r) => r.id === id)
+      if (!rec || !rec.teach) {
+        wx.showToast({ title: '无教练视频', icon: 'none' })
+        return
+      }
+      wx.navigateTo({
+        url:
+          `/pages/pose/pose?video=${encodeURIComponent(rec.teach)}` +
+          `&song=${encodeURIComponent(rec.song)}` +
+          `&rate=${rec.rate || 0.8}`,
+      })
+    },
+
+    // 分享（由 button open-type="share" 触发）
+    onShareAppMessage(e: any) {
+      // 尝试从触发元素获取记录 id
+      const id = e && e.target && e.target.dataset && e.target.dataset.id
+      const rec = id ? this.data.list.find((r) => r.id === id) : null
+      if (rec) {
+        return {
+          title: `我跳了《${rec.song}》，平均分 ${rec.score}！快来一起跳～`,
+          path:
+            `pages/shared/shared?song=${encodeURIComponent(rec.song)}` +
+            `&score=${rec.score}` +
+            `&type=${encodeURIComponent(rec.type || '')}` +
+            `&teach=${encodeURIComponent(rec.teach || '')}` +
+            `&video=${encodeURIComponent(rec.video || '')}` +
+            `&rate=${rec.rate || 0.8}` +
+            `&date=${encodeURIComponent(rec.date || '')}`,
+        }
+      }
+      return {
+        title: '来一起跳舞吧！',
+        path: 'pages/home/home',
+      }
+    },
   },
 })

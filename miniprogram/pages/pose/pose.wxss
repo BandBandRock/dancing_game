@@ -374,17 +374,77 @@
   opacity: 0.9;
 }
 
+/* 左下角暂停按钮 */
+.stop-btn {
+  position: absolute;
+  left: 32rpx;
+  bottom: calc(env(safe-area-inset-bottom) + 32rpx);
+  padding: 24rpx 52rpx;
+  background: rgba(255, 255, 255, 0.25);
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 700;
+  border-radius: 40rpx;
+  z-index: 30;
+  border: 1rpx solid rgba(255, 255, 255, 0.4);
+}
+
+/* 暂停弹窗 */
+.pause-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 200;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pause-modal {
+  width: 500rpx;
+  background: #fff;
+  border-radius: 24rpx;
+  padding: 48rpx 40rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28rpx;
+}
+.pause-title {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #333;
+}
+.pause-btn {
+  width: 100%;
+  text-align: center;
+  padding: 24rpx 0;
+  border-radius: 16rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+.pause-restart {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: #fff;
+}
+.pause-back {
+  background: #f5f5f5;
+  color: #666;
+}
+
 /* 倍速选择栏 */
 .speed-panel {
   position: absolute;
   left: 32rpx;
-  bottom: 120rpx;
+  top: calc(env(safe-area-inset-top) + 100rpx);
   display: flex;
   gap: 16rpx;
   z-index: 20;
-  padding: 14rpx 24rpx;
+  padding: 10rpx 20rpx;
   background: rgba(0, 0, 0, 0.45);
-  border-radius: 40rpx;
+  border-radius: 30rpx;
 }
 
 .speed-tag {

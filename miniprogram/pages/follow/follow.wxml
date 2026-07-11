@@ -1,6 +1,6 @@
 <!--follow.wxml-->
 <navigation-bar title="收藏 - 最爱舞曲" back="{{true}}" color="black" background="#FFF"></navigation-bar>
-<scroll-view class="page" scroll-y type="list">
+<scroll-view class="page" scroll-y>
   <!-- 搜索条 -->
   <view class="search-bar">
     <text class="search-icon">🔍</text>
@@ -20,7 +20,7 @@
         <view class="item-cover">💃</view>
         <view class="item-info">
           <text class="item-title">{{item.name}}</text>
-          <text class="item-sub">{{item.artist}} · {{item.type}} · {{item.duration}}</text>
+          <text class="item-sub">🕐 时长：{{item.duration}}</text>
         </view>
       </view>
       <view class="item-right">

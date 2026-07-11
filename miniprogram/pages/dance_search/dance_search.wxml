@@ -42,7 +42,7 @@
           <view class="play-btn">▶</view>
           <view class="song-info">
             <text class="song-name">{{item.name}}</text>
-            <text class="song-sub">{{item.artist}} · {{item.duration}}</text>
+            <text class="song-sub">🕐 时长：{{item.duration}}</text>
           </view>
           <view
             class="fav-btn {{favoritedKeys[item.name + '|' + item.type] ? 'fav-on' : ''}}"

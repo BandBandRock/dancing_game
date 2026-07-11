@@ -1,48 +1,57 @@
-// pages/playvideo/playvideo.ts 横屏双视频回放：左侧双视频 + 右侧信息面板
+// pages/playvideo/playvideo.ts 竖屏视频回放（与 shared 页实现一致）
 import { resolveCloudFile } from '../../utils/cloudMedia'
 
 Component({
   data: {
-    teachVideo: '', // 教练视频（解析后的临时 URL）
-    userVideo: '',  // 用户录制视频（解析后的临时 URL）
-    teachFileID: '', // 教练视频原始 fileID（分享/再跳用）
-    videoFileID: '', // 用户视频原始 fileID
     song: '',
     score: 0,
     date: '',
     timeText: '',
     rate: 0.8,
-    ready: false,
+    teachFileID: '',
+    videoFileID: '',
+    // 播放态
+    playing: false,
+    teachUrl: '',
+    userUrl: '',
   },
   methods: {
-    async onLoad(options: any) {
-      const videoRaw = options.video ? decodeURIComponent(options.video) : ''
-      const teachRaw = options.teach ? decodeURIComponent(options.teach) : ''
+    onLoad(options: any) {
       const song = options.song ? decodeURIComponent(options.song) : ''
       const score = options.score ? Number(options.score) : 0
       const date = options.date ? decodeURIComponent(options.date) : ''
       const hour = options.hour ? Number(options.hour) : 0
       const minute = options.minute ? Number(options.minute) : 0
       const rate = options.rate ? Number(options.rate) : 0.8
+      const teachFileID = options.teach ? decodeURIComponent(options.teach) : ''
+      const videoFileID = options.video ? decodeURIComponent(options.video) : ''
       const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
-      const timeText = `${pad(hour)}:${pad(minute)}`
+      const timeText = hour || minute ? `${pad(hour)}:${pad(minute)}` : ''
 
-      this.setData({ song, score, date, timeText, rate, teachFileID: teachRaw, videoFileID: videoRaw })
+      this.setData({ song, score, date, timeText, rate, teachFileID, videoFileID })
 
-      // 并行解析两个 fileID
+      // 直接进入播放
+      this.onPlay()
+    },
+
+    // 播放视频：解析 fileID 弹出双视频对比
+    async onPlay() {
+      wx.showLoading({ title: '加载中...' })
       try {
         const [userUrl, teachUrl] = await Promise.all([
-          videoRaw ? resolveCloudFile(videoRaw) : Promise.resolve(''),
-          teachRaw ? resolveCloudFile(teachRaw) : Promise.resolve(''),
+          this.data.videoFileID ? resolveCloudFile(this.data.videoFileID) : Promise.resolve(''),
+          this.data.teachFileID ? resolveCloudFile(this.data.teachFileID) : Promise.resolve(''),
         ])
-        this.setData({ userVideo: userUrl, teachVideo: teachUrl, ready: true })
+        this.setData({ playing: true, userUrl, teachUrl })
       } catch (e) {
         console.error('[playvideo] 解析视频失败', e)
-        this.setData({ ready: true })
+        wx.showToast({ title: '视频加载失败', icon: 'none' })
+      } finally {
+        wx.hideLoading()
       }
     },
 
-    // 教练视频开始播放时设置倍速
+    // 教练视频播放时设倍速
     onTeachPlay() {
       const rate = this.data.rate
       if (rate && rate !== 1) {
@@ -51,7 +60,12 @@ Component({
       }
     },
 
-    // 分享视频
+    // 关闭播放
+    onClosePlay() {
+      this.setData({ playing: false, teachUrl: '', userUrl: '' })
+    },
+
+    // 分享
     onShareAppMessage() {
       return {
         title: `我跳了《${this.data.song}》，平均分 ${this.data.score}！快来一起跳～`,
@@ -65,11 +79,7 @@ Component({
       }
     },
 
-    onShare() {
-      // 无需额外逻辑，由 button open-type="share" 触发 onShareAppMessage
-    },
-
-    // 再跳一次：带教练视频跳到 pose 页
+    // 再跳一次
     onRedance() {
       if (!this.data.teachFileID) {
         wx.showToast({ title: '无教练视频', icon: 'none' })
@@ -83,6 +93,7 @@ Component({
       })
     },
 
+    // 退出
     onExit() {
       const pages = getCurrentPages()
       if (pages.length > 1) {

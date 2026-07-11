@@ -76,8 +76,8 @@ function normalize(doc: any): DanceRecord {
 // 他人访问我的记录通过其他手段解决，不走这里。
 export function getHistory(): Promise<DanceRecord[]> {
   return getOpenId().then((openid) => {
-    const q = getDB().collection(COLLECTION)
-    if (openid) q.where({ _openid: openid })
+    let q = getDB().collection(COLLECTION)
+    if (openid) q = q.where({ _openid: openid })
     return q
       .limit(1000)
       .get()

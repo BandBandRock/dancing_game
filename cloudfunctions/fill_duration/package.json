@@ -1,0 +1,9 @@
+{
+  "name": "fill_duration",
+  "version": "1.0.0",
+  "description": "一次性云函数：遍历 videos 集合获取视频时长并回填 duration",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

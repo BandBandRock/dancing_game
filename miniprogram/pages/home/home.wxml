@@ -21,7 +21,7 @@
         <view class="search-item-play">▶</view>
         <view class="search-item-info">
           <text class="search-item-name">{{item.name}}</text>
-          <text class="search-item-sub">{{item.artist}} · {{item.duration}}</text>
+          <text class="search-item-sub">🕐 时长：{{item.duration}}</text>
         </view>
         <view
           class="fav-btn {{favoritedKeys[item.name + '|' + item.type] ? 'fav-on' : ''}}"
@@ -82,7 +82,3 @@
   <button class="upload-btn" bindtap="onUploadTap">📤 上传舞蹈</button>
 </view>
 
-<!-- Debug 入口：姿态识别 -->
-<view class="debug-gear {{shaking.debug ? 'gear-spin' : ''}}" bindtap="goPose">
-  <text class="debug-gear-icon">⚙️</text>
-</view>

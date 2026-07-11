@@ -71,11 +71,24 @@ export async function fetchVideos(type?: string): Promise<VideoMeta[]> {
       all.push(...(res.data || []))
     }
     void _
-    return all.map(normalize)
+    return sortByDuration(all.map(normalize))
   } catch (e) {
     console.error('[videoRepo] fetchVideos 失败', e)
     return []
   }
+}
+
+// 按时长从短到长排序（duration 格式 "MM:SS" 或 "HH:MM:SS"）
+function parseDuration(d: string): number {
+  if (!d) return 9999
+  const parts = d.split(':').map(Number)
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2]
+  if (parts.length === 2) return parts[0] * 60 + parts[1]
+  return 9999
+}
+
+function sortByDuration(list: VideoMeta[]): VideoMeta[] {
+  return list.sort((a, b) => parseDuration(a.duration) - parseDuration(b.duration))
 }
 
 // 关键词搜索（客户端过滤：先拉全量再按 name/artist/type 匹配）

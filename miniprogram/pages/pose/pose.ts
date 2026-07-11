@@ -118,6 +118,7 @@ Component({
     // ---- 跳舞会话状态 ----
     started: false,   // 是否已点「开始跳舞」
     ended: false,     // 是否已结束（防止重复保存）
+    paused: false,    // 是否暂停中（停一下弹窗）
     startTime: 0,     // 开始跳舞的时间戳（毫秒，用于记录开始时间）
 
     // ---- 算分 ----
@@ -290,6 +291,41 @@ Component({
           this.setData({ countdown: n })
         }
       }, 1000) as unknown as number
+    },
+
+    // 停一下：暂停视频和打分，弹出选择
+    onPause() {
+      this.setData({ paused: true })
+      try {
+        const vc = wx.createVideoContext('danceVideo', this)
+        vc.pause()
+      } catch (e) {}
+      this.stopScoring()
+    },
+
+    // 重新开始：关闭弹窗，重头开始跳舞
+    onRestart() {
+      this.setData({ paused: false })
+      // 重置状态，重新开始
+      this.setData({ started: false, ended: false, score: 60, moving: false })
+      this.data._userSkel = []
+      this.data._videoTime = 0
+      this.startWithCountdown()
+    },
+
+    // 返回：放弃本次跳舞，回到上一页
+    onGoBack() {
+      this.setData({ paused: false })
+      try {
+        const vc = wx.createVideoContext('danceVideo', this)
+        vc.stop()
+      } catch (e) {}
+      const pages = getCurrentPages()
+      if (pages.length > 1) {
+        wx.navigateBack()
+      } else {
+        wx.reLaunch({ url: '/pages/dance_search/dance_search' })
+      }
     },
 
     // 点击「结束跳舞」或视频播放完毕：上传云端后跳转反馈页（由反馈页保存/分享落盘）

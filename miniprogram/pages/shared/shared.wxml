@@ -60,6 +60,7 @@
           autoplay="{{true}}"
           controls="{{true}}"
           object-fit="contain"
+          muted="{{true}}"
         ></video>
         <view wx:else class="play-empty">无录制视频</view>
       </view>
