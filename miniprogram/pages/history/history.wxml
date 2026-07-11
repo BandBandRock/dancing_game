@@ -33,29 +33,35 @@
         data-id="{{item.id}}"
         catchtap="onToggleCircle"
       ></view>
-      <view class="record-main">
-        <view class="record-top">
+      <view class="record-main" bindtap="onPlay" data-id="{{item.id}}">
+        <!-- 封面区域 -->
+        <view class="record-cover">
+          <video
+            wx:if="{{item.coverUrl}}"
+            class="cover-video"
+            src="{{item.coverUrl}}"
+            autoplay="{{false}}"
+            controls="{{false}}"
+            show-center-play-btn="{{false}}"
+            object-fit="cover"
+            muted="{{true}}"
+          ></video>
+          <view wx:else class="cover-ph">
+            <text class="cover-emoji">🎥</text>
+          </view>
+          <view class="cover-play">▶</view>
+          <!-- 调试齿轮 -->
+          <view class="debug-gear" catchtap="onDebugTap" data-id="{{item.id}}">⚙</view>
+        </view>
+        <!-- 信息区域 -->
+        <view class="record-info">
           <text class="record-song">{{item.song}}</text>
           <text class="record-score">{{item.scoreText}}</text>
-        </view>
-        <view class="record-time">
-          <text class="record-date">{{item.dateText}}</text>
-          <text class="record-dot">·</text>
-          <text class="record-clock">{{item.timeText}}</text>
-        </view>
-        <!-- 自己跳舞的视频封面：点击满屏播放 -->
-        <view
-          class="record-video"
-          bindtap="onPlay"
-          data-id="{{item.id}}"
-        >
-          <view class="video-ph">
-            <text class="video-emoji">🎥</text>
+          <view class="record-time">
+            <text class="record-date">{{item.dateText}}</text>
+            <text class="record-dot">·</text>
+            <text class="record-clock">{{item.timeText}}</text>
           </view>
-          <text class="video-badge">我的视频</text>
-          <view class="video-play">▶</view>
-          <!-- 调试齿轮：点击弹出 fileId / 骨骼信息 -->
-          <view class="debug-gear" catchtap="onDebugTap" data-id="{{item.id}}">⚙</view>
         </view>
       </view>
     </view>

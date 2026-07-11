@@ -12,6 +12,7 @@
     "pages/playvideo/playvideo",
     "pages/skelview/skelview",
     "pages/feedback/feedback",
+    "pages/shared/shared",
     "pages/upload/upload"
   ],
   "window": {

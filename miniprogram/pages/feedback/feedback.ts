@@ -182,12 +182,26 @@ Page({
     wx.reLaunch({ url })
   },
 
+  // 构造分享落地页路径（带完整参数）
+  _sharePath() {
+    return (
+      `pages/shared/shared?song=${encodeURIComponent(this.data.song)}` +
+      `&score=${this.data.score}` +
+      `&teach=${encodeURIComponent(this.data.teach || '')}` +
+      `&video=${encodeURIComponent(this.data.video || '')}` +
+      `&rate=${this.data.rate}` +
+      `&date=${encodeURIComponent(this.data.date || '')}` +
+      `&hour=${this.data.hour}` +
+      `&minute=${this.data.minute}`
+    )
+  },
+
   // 分享给微信好友（点弹窗里的「分享给微信好友」按钮触发）：分享真正发出后再保存
   onShareAppMessage() {
     this.performSave(true) // 后台静默保存，不遮挡系统分享面板
     return {
       title: `我跳了《${this.data.song}》，平均分 ${this.data.score}！快来一起跳～`,
-      path: 'pages/dance_search/dance_search',
+      path: this._sharePath(),
     }
   },
 
@@ -196,6 +210,7 @@ Page({
     this.performSave(true)
     return {
       title: `我跳了《${this.data.song}》，平均分 ${this.data.score}！`,
+      query: this._sharePath().split('?')[1] || '',
     }
   },
 })

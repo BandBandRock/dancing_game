@@ -136,84 +136,83 @@ page {
 .record-main {
   flex: 1;
   min-width: 0;
-}
-.record-top {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: row;
+  gap: 20rpx;
 }
-.record-song {
-  font-size: 38rpx;
-  font-weight: 700;
-  color: #222;
-}
-.record-score {
-  font-size: 32rpx;
-  font-weight: 600;
-  color: #ff7e5f;
-  background: rgba(255, 126, 95, 0.12);
-  padding: 6rpx 18rpx;
-  border-radius: 20rpx;
-}
-.record-time {
-  display: flex;
-  align-items: center;
-  gap: 10rpx;
-  margin-top: 12rpx;
-}
-.record-date,
-.record-clock {
-  font-size: 28rpx;
-  color: #999;
-}
-.record-dot {
-  color: #ccc;
-}
-
-/* 自己跳舞的视频封面 */
-.record-video {
+/* 左侧封面 */
+.record-cover {
   position: relative;
-  width: 100%;
-  height: 360rpx;
-  margin-top: 20rpx;
+  flex: none;
+  width: 200rpx;
+  height: 280rpx;
   border-radius: 16rpx;
   overflow: hidden;
   background: linear-gradient(135deg, #667eea, #764ba2);
 }
-.video-ph {
+.cover-video {
+  width: 100%;
+  height: 100%;
+}
+.cover-ph {
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
 }
-.video-emoji {
-  font-size: 90rpx;
+.cover-emoji {
+  font-size: 60rpx;
 }
-.video-badge {
-  position: absolute;
-  top: 12rpx;
-  left: 12rpx;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  font-size: 24rpx;
-  padding: 4rpx 16rpx;
-  border-radius: 20rpx;
-}
-.video-play {
+.cover-play {
   position: absolute;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 88rpx;
-  height: 88rpx;
+  width: 64rpx;
+  height: 64rpx;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.45);
   color: #fff;
-  font-size: 36rpx;
+  font-size: 28rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+}
+/* 右侧信息 */
+.record-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12rpx;
+}
+.record-song {
+  font-size: 34rpx;
+  font-weight: 700;
+  color: #222;
+}
+.record-score {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.12);
+  padding: 4rpx 14rpx;
+  border-radius: 16rpx;
+  align-self: flex-start;
+}
+.record-time {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+.record-date,
+.record-clock {
+  font-size: 26rpx;
+  color: #999;
+}
+.record-dot {
+  color: #ccc;
 }
 /* 调试齿轮：视频右上角，点击弹出 fileId / 骨骼信息 */
 .debug-gear {

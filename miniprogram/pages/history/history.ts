@@ -5,6 +5,7 @@ import {
   deleteHistory,
   DanceRecord,
 } from '../../utils/danceHistory'
+import { resolveCloudFile } from '../../utils/cloudMedia'
 
 const WEEK = ['日', '一', '二', '三', '四', '五', '六']
 
@@ -17,6 +18,7 @@ interface DisplayRecord extends DanceRecord {
   dateText: string // 07-10 周四
   timeText: string // 14:30 开始
   scoreText: string // 平均分 96
+  coverUrl: string // 录制视频封面（临时 URL，供 video poster 或 image 展示）
 }
 
 Component({
@@ -47,22 +49,30 @@ Component({
       wx.reLaunch({ url: '/pages/home/home' })
     },
 
-    loadRecords() {
+    async loadRecords() {
       // 读取云端记录（默认空，跳舞后由跳舞页 addHistory 写入），最新在前
-      getHistory().then((raw) => {
-        const list: DisplayRecord[] = raw.map((r) => {
-          const d = new Date(r.date + 'T00:00:00')
-          const w = WEEK[d.getDay()]
-          return {
-            ...r,
-            dateText: `${r.date.slice(5)} 周${w}`,
-            timeText: `${pad(r.hour)}:${pad(r.minute)} 开始`,
-            scoreText: `平均分 ${r.score}`,
-          }
-        })
-        // 跳舞次数 = 记录条数（空时为 0，每录一次 +1）
-        this.setData({ list, totalCount: list.length })
+      const raw = await getHistory()
+      const list: DisplayRecord[] = raw.map((r) => {
+        const d = new Date(r.date + 'T00:00:00')
+        const w = WEEK[d.getDay()]
+        return {
+          ...r,
+          dateText: `${r.date.slice(5)} 周${w}`,
+          timeText: `${pad(r.hour)}:${pad(r.minute)} 开始`,
+          scoreText: `平均分 ${r.score}`,
+          coverUrl: '', // 先占位，后面异步填充
+        }
       })
+      this.setData({ list, totalCount: list.length })
+
+      // 异步解析视频封面（批量，不阻塞列表渲染）
+      for (let i = 0; i < list.length; i++) {
+        if (list[i].video) {
+          resolveCloudFile(list[i].video).then((url) => {
+            this.setData({ [`list[${i}].coverUrl`]: url })
+          }).catch(() => {})
+        }
+      }
     },
 
     // 点击齿轮图标 → 弹出调试信息（显示 fileId / 骨骼 JSON fileId）
