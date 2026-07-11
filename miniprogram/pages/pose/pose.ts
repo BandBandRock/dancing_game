@@ -366,6 +366,7 @@ Component({
         video: finalVideo,
         teach: this.data.danceVideo, // 教学视频，供「重跳」复用
         skeleton: skeletonFileID || undefined,
+        rate: this.data.rate, // 教学视频倍速，回放时需同步
       }
 
       // 跳转反馈页（保存/分享由反馈页落盘到历史）
@@ -463,9 +464,7 @@ Component({
     checkAndInit() {
       if (!(wx as any).createVKSession) {
         // 没有姿态识别能力：跳过对齐，直接显示「开始跳舞」兜底入口
-        this.setData({ cameraReady: true, aligning: false, statusText: '开始录制（无姿态识别）' }, () => {
-          this.startRecording()
-        })
+        this.setData({ cameraReady: true, aligning: false, statusText: '开始录制（无姿态识别）' })
         return
       }
 
@@ -483,13 +482,11 @@ Component({
           }
           this.setData({ cameraReady: true }, () => {
             this.initCanvas().then(() => this.initVK())
-            this.startRecording()
           })
         },
         fail: () => {
           this.setData({ cameraReady: true }, () => {
             this.initCanvas().then(() => this.initVK())
-            this.startRecording()
           })
         },
       })

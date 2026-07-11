@@ -25,6 +25,7 @@ Component({
     loading: false,
     showVideo: false,
     currentVideo: '',
+    currentFileID: '', // 原始 cloud:// fileID（不会过期，供 pose/history 使用）
     currentSong: '',
     currentType: '',
     subTitle: '',
@@ -62,6 +63,7 @@ Component({
           playVideo(video).then((url) => {
             this.setData({
               currentVideo: url,
+              currentFileID: video, // 保存原始 fileID
               currentSong: song,
               currentType: type,
               videoFull: false,
@@ -169,6 +171,7 @@ Component({
       playVideo(song.video).then((url) => {
         this.setData({
           currentVideo: url,
+          currentFileID: song.video, // 保存原始 fileID
           currentSong: song.name,
           currentType: song.type,
           videoFull: false,
@@ -181,12 +184,12 @@ Component({
       })
     },
 
-    // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
+    // 去跳舞：带当前视频跳转姿态识别页（传原始 fileID，不传临时 URL）
     onGoDance() {
-      if (!this.data.currentVideo) return
+      if (!this.data.currentFileID) return
       wx.navigateTo({
         url:
-          `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}` +
+          `../pose/pose?video=${encodeURIComponent(this.data.currentFileID)}` +
           `&song=${encodeURIComponent(this.data.currentSong)}` +
           `&type=${encodeURIComponent(this.data.currentType)}` +
           `&rate=${this.data.rate}`,
@@ -196,7 +199,7 @@ Component({
     // 关闭视频
     onCloseVideo() {
       this.stopFirework()
-      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
+      this.setData({ showVideo: false, currentVideo: '', currentFileID: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
     },
 
     // 视频播放结束 → 礼花 + 你真棒

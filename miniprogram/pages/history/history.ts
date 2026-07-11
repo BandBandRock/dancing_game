@@ -121,8 +121,20 @@ Component({
         url:
           '/pages/playvideo/playvideo?video=' +
           encodeURIComponent(rec.video) +
+          '&teach=' +
+          encodeURIComponent(rec.teach || '') +
           '&song=' +
-          encodeURIComponent(rec.song),
+          encodeURIComponent(rec.song) +
+          '&score=' +
+          rec.score +
+          '&date=' +
+          encodeURIComponent(rec.date) +
+          '&hour=' +
+          rec.hour +
+          '&minute=' +
+          rec.minute +
+          '&rate=' +
+          (rec.rate || 0.8),
       })
     },
 

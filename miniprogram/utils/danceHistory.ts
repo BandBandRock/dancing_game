@@ -26,6 +26,7 @@ export interface DanceRecord {
   video: string // 自己跳舞的视频云端地址（cloud:// fileID）
   skeleton?: string // 用户跳舞骨骼序列云端地址（cloud:// fileID）
   teach?: string // 教学/示例视频云端地址（cloud:// fileID）
+  rate?: number // 教学视频倍速（0.5/0.8 等），回放时教练视频同步
   createTime?: number // 写入时间戳（客户端排序用）
 }
 
@@ -64,6 +65,7 @@ function normalize(doc: any): DanceRecord {
     video: doc.video || '',
     skeleton: doc.skeleton || undefined,
     teach: doc.teach || undefined,
+    rate: doc.rate || undefined,
     createTime: doc.createTime || 0,
   }
 }

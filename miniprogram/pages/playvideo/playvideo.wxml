@@ -1,17 +1,61 @@
-<!--pages/playvideo/playvideo.wxml 全屏播放自己跳舞的视频-->
+<!--pages/playvideo/playvideo.wxml 横屏：左侧双视频 + 右侧信息面板-->
 <view class="root">
-  <video
-    wx:if="{{video}}"
-    class="player-video"
-    src="{{video}}"
-    autoplay="{{true}}"
-    controls="{{true}}"
-    show-center-play-btn="{{true}}"
-    object-fit="contain"
-  ></video>
-  <view wx:else class="player-empty">视频不可用</view>
+  <!-- 左侧：双视频区域 -->
+  <view class="left-area" wx:if="{{ready}}">
+    <!-- 教练视频 -->
+    <view class="video-col">
+      <text class="col-label">教练</text>
+      <video
+        wx:if="{{teachVideo}}"
+        id="teachPlayer"
+        class="col-video"
+        src="{{teachVideo}}"
+        autoplay="{{true}}"
+        controls="{{true}}"
+        show-center-play-btn="{{true}}"
+        object-fit="contain"
+        bindplay="onTeachPlay"
+      ></video>
+      <view wx:else class="col-empty">无教练视频</view>
+    </view>
+    <!-- 我的视频 -->
+    <view class="video-col">
+      <text class="col-label">我的</text>
+      <video
+        wx:if="{{userVideo}}"
+        class="col-video"
+        src="{{userVideo}}"
+        autoplay="{{true}}"
+        controls="{{true}}"
+        show-center-play-btn="{{true}}"
+        object-fit="contain"
+      ></video>
+      <view wx:else class="col-empty">无录制视频</view>
+    </view>
+  </view>
+  <view wx:else class="left-area loading-area">
+    <text class="loading-text">加载中...</text>
+  </view>
 
-  <!-- 左上角退出键（Skyline 下普通 view 与 video 同层，z-index 生效可直接点） -->
+  <!-- 右侧：信息面板 -->
+  <view class="right-panel">
+    <view class="info-block">
+      <text class="info-song">{{song}}</text>
+    </view>
+    <view class="info-block score-block">
+      <text class="score-label">得分</text>
+      <text class="score-num">{{score}}</text>
+    </view>
+    <view class="info-block">
+      <text class="info-date">{{date}}</text>
+      <text class="info-time">{{timeText}}</text>
+    </view>
+    <view class="info-block">
+      <text class="info-rate">倍速 {{rate}}x</text>
+    </view>
+  </view>
+
+  <!-- 退出按钮（左上角） -->
   <view class="exit-btn" bindtap="onExit">
     <text class="exit-icon">✕</text>
   </view>

@@ -1,47 +1,133 @@
-/* pages/playvideo/playvideo.wxss 全屏播放 */
+/* pages/playvideo/playvideo.wxss 横屏：左侧双视频 + 右侧信息面板 */
+page {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
 .root {
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #000;
-  overflow: hidden;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: row;
 }
-.player-video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: #000;
+
+/* 左侧双视频区域：占约 70% 宽度 */
+.left-area {
+  flex: none;
+  width: 70%;
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  gap: 4rpx;
 }
-.player-empty {
+.loading-area {
+  align-items: center;
+  justify-content: center;
+}
+.loading-text {
+  color: #999;
+  font-size: 28rpx;
+}
+
+/* 每列视频 */
+.video-col {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: #111;
+}
+.col-label {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  top: 10rpx;
+  left: 10rpx;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+.col-video {
+  width: 100%;
+  height: 100%;
+}
+.col-empty {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #999;
-  font-size: 30rpx;
+  color: #555;
+  font-size: 24rpx;
 }
-/* 左上角退出键 */
+
+/* 右侧信息面板：占约 30% 宽度 */
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24rpx 20rpx;
+  gap: 40rpx;
+}
+.info-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+}
+.info-song {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #fff;
+  text-align: center;
+  word-break: break-all;
+}
+.score-block {
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  padding: 20rpx 36rpx;
+  border-radius: 20rpx;
+}
+.score-label {
+  font-size: 22rpx;
+  color: rgba(255, 255, 255, 0.8);
+}
+.score-num {
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #fff;
+}
+.info-date {
+  font-size: 26rpx;
+  color: #aaa;
+}
+.info-time {
+  font-size: 24rpx;
+  color: #888;
+}
+.info-rate {
+  font-size: 24rpx;
+  color: #feb47b;
+  font-weight: 600;
+}
+
+/* 退出按钮（左上角） */
 .exit-btn {
   position: absolute;
-  top: calc(env(safe-area-inset-top) + 20rpx);
-  left: 24rpx;
+  top: 12rpx;
+  left: 16rpx;
   z-index: 100;
-  width: 76rpx;
-  height: 76rpx;
-  line-height: 76rpx;
+  width: 60rpx;
+  height: 60rpx;
+  line-height: 60rpx;
   text-align: center;
   border-radius: 50%;
-  background-color: rgba(0, 0, 0, 0.5);
-  color: #fff;
+  background-color: rgba(0, 0, 0, 0.55);
 }
 .exit-icon {
-  font-size: 40rpx;
+  font-size: 34rpx;
   color: #fff;
-  line-height: 76rpx;
 }

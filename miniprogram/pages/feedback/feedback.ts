@@ -15,6 +15,7 @@ interface PendingDance {
   video: string // 本人跳舞视频（云端 fileID 或本地兜底）
   teach: string // 教学视频，供「重跳」复用
   skeleton?: string // 用户跳舞骨骼序列云端地址（cloud:// fileID），供「呈现骨骼视频」回放
+  rate?: number // 教学视频倍速（0.5/0.8 等），回放时教练视频同步
 }
 
 Page({
@@ -29,6 +30,7 @@ Page({
     video: '',
     teach: '',
     skeleton: '',
+    rate: 0.8,
     saved: false,
     saving: false,
     saveLabel: '保存',
@@ -50,6 +52,7 @@ Page({
         video: p.video,
         teach: p.teach,
         skeleton: p.skeleton || '',
+        rate: p.rate || 0.8,
       })
     }
   },
@@ -130,6 +133,7 @@ Page({
         video: finalVideo,
         skeleton: this.data.skeleton || undefined,
         teach: this.data.teach || undefined,
+        rate: this.data.rate,
       }).then(() => {
         wx.removeStorageSync('__pendingDance')
         return finalVideo
