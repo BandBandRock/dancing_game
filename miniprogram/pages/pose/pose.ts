@@ -123,7 +123,7 @@ Component({
     // ---- 算分 ----
     score: 60,        // 当前得分（0~100），初始 60，进度条展示
     moving: false,    // 最近一次判定是否「在动」（相似度>0.5）
-    rate: 1,          // 视频播放倍速
+    rate: 0.8,          // 视频播放倍速（默认 0.8x）
     refReady: false,  // 示范骨骼是否已下载并解析就绪
     warn: false,      // 是否处于「连续多人/缺帧」红色告警
 
@@ -135,7 +135,7 @@ Component({
     counting: false,     // 是否处于「3-2-1 倒计时」阶段（对齐达标后、正式开始前）
     countdown: 0,        // 倒计时数字（3/2/1），0 表示不显示
     shaking: {         // 倍速按钮颤动状态
-      s05: false, s1: false,
+      s05: false, s08: false,
     },
     fireworkActive: false,
     showPraise: false,
@@ -189,12 +189,18 @@ Component({
     // 接收搜索页带入的教学视频
     onLoad(options: any) {
       if (options && options.video) {
+        const rate = options.rate ? Number(options.rate) : 0.8
         this.setData({
           danceVideo: decodeURIComponent(options.video),
           songName: options.song ? decodeURIComponent(options.song) : '',
           songType: options.type ? decodeURIComponent(options.type) : '',
-          rate: 1,
+          rate,
         })
+        // 同步设置视频倍速
+        setTimeout(() => {
+          const vc = wx.createVideoContext('danceVideo', this)
+          vc.playbackRate(rate)
+        }, 100)
       }
       // 教学视频若是 cloud:// fileID，先解析成临时可播放地址再交给 <video>
       if (this.data.danceVideo) {
@@ -432,11 +438,17 @@ Component({
       })
     },
 
-    // 视频自然播放完毕（未手动结束）→ 结束并保存
+    // 视频播放结束 → 礼花 + 你真棒，然后自动结束跳舞保存记录
     onVideoEnded() {
-      if (this.data.started && !this.data.ended) {
-        this.finishDance()
-      }
+      // 先展示礼花与"你真棒"
+      this.setData({ fireworkActive: true, showPraise: true })
+      setTimeout(() => this.prepFireCanvas(), 100)
+      // 延迟结束后自动保存跳舞记录
+      setTimeout(() => {
+        if (this.data.started && !this.data.ended) {
+          this.finishDance()
+        }
+      }, 1500)
     },
 
     // 停止算分计时器
@@ -722,12 +734,6 @@ Component({
       this.setData({ mirror: !this.data.mirror })
     },
 
-    // 视频播放结束 → 礼花 + 你真棒
-    onVideoEnded() {
-      this.setData({ fireworkActive: true, showPraise: true })
-      setTimeout(() => this.prepFireCanvas(), 100)
-    },
-
     // ===== 礼花粒子系统 =====
     _fireTimer: 0 as any,
     _fireCtx: null as any,
@@ -849,7 +855,7 @@ Component({
       const rate = Number(e.currentTarget.dataset.rate)
       if (rate === this.data.rate) return
 
-      const keyMap: Record<number, string> = { 0.5: 's05', 1: 's1' }
+      const keyMap: Record<number, string> = { 0.5: 's05', 0.8: 's08' }
       const key = keyMap[rate]
       if (key) {
         this.setData({ [`shaking.${key}`]: true })

@@ -1,10 +1,10 @@
 <!--follow.wxml-->
-<navigation-bar title="关注 - 收藏舞曲" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<navigation-bar title="收藏 - 最爱舞曲" back="{{true}}" color="black" background="#FFF"></navigation-bar>
 <scroll-view class="page" scroll-y type="list">
   <!-- 搜索条 -->
   <view class="search-bar">
     <text class="search-icon">🔍</text>
-    <input class="search-input" placeholder="搜索收藏的舞曲..." bindinput="onSearchInput" value="{{keyword}}" />
+    <input class="search-input" placeholder="搜索最爱的舞曲..." bindinput="onSearchInput" value="{{keyword}}" />
   </view>
 
   <!-- 列表 -->
@@ -12,24 +12,26 @@
     <view
       class="music-item"
       wx:for="{{filteredList}}"
-      wx:key="id"
+      wx:key="favoritedAt"
+      bindtap="onMusicTap"
+      data-index="{{index}}"
     >
       <view class="item-left">
-        <view class="item-cover">{{item.emoji}}</view>
+        <view class="item-cover">💃</view>
         <view class="item-info">
-          <text class="item-title">{{item.title}}</text>
-          <text class="item-sub">{{item.style}} · {{item.duration}}</text>
+          <text class="item-title">{{item.name}}</text>
+          <text class="item-sub">{{item.artist}} · {{item.type}} · {{item.duration}}</text>
         </view>
       </view>
       <view class="item-right">
-        <text class="item-heart {{item.liked ? 'liked' : ''}}" data-id="{{item.id}}" bindtap="toggleLike">{{item.liked ? '❤️' : '🤍'}}</text>
+        <text class="item-heart liked" data-index="{{index}}" bindtap="removeFavorite">❤️</text>
       </view>
     </view>
   </view>
 
   <view class="empty-tip" wx:else>
     <text class="empty-emoji">🎵</text>
-    <text class="empty-text">暂无收藏舞曲</text>
-    <text class="empty-hint">去首页选择舞种探索更多</text>
+    <text class="empty-text">暂无最爱舞曲</text>
+    <text class="empty-hint">在歌曲列表中点亮❤️即可收藏</text>
   </view>
 </scroll-view>

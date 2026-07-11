@@ -14,7 +14,7 @@
       confirm-type="search"
     />
     <text wx:if="{{keyword}}" class="search-clear" bindtap="onClear">✕</text>
-    <button class="search-btn" bindtap="doSearch">搜索</button>
+    <button class="search-btn {{shaking.search ? 's-pressed s-shaking' : ''}}" bindtap="doSearch">搜索</button>
   </view>
 
   <!-- 搜索结果 -->
@@ -25,13 +25,19 @@
         wx:for="{{results}}"
         wx:key="name"
         bindtap="onSongTap"
-        data-name="{{item.name}}"
+        data-index="{{index}}"
       >
         <view class="play-btn">▶</view>
         <view class="result-info">
           <text class="result-title">{{item.name}}</text>
           <text class="result-desc">{{item.artist}} · {{item.duration}}</text>
         </view>
+        <view
+          class="fav-btn {{favoritedKeys[item.name + '|' + item.type] ? 'fav-on' : ''}}"
+          catchtap="toggleFavorite"
+          data-key="{{item.name + '|' + item.type}}"
+          data-index="{{index}}"
+        >{{favoritedKeys[item.name + '|' + item.type] ? '❤️' : '🤍'}}</view>
         <text class="result-tag">{{item.type}}</text>
       </view>
     </view>

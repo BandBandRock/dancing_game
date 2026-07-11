@@ -37,13 +37,19 @@
           wx:key="name"
           class="song-item"
           bindtap="onSongTap"
-          data-name="{{item.name}}"
+          data-index="{{index}}"
         >
           <view class="play-btn">▶</view>
           <view class="song-info">
             <text class="song-name">{{item.name}}</text>
             <text class="song-sub">{{item.artist}} · {{item.duration}}</text>
           </view>
+          <view
+            class="fav-btn {{favoritedKeys[item.name + '|' + item.type] ? 'fav-on' : ''}}"
+            catchtap="toggleFavorite"
+            data-key="{{item.name + '|' + item.type}}"
+            data-index="{{index}}"
+          >{{favoritedKeys[item.name + '|' + item.type] ? '❤️' : '🤍'}}</view>
           <text class="song-type">{{item.type}}</text>
         </view>
         <view wx:if="{{filtered.length === 0}}" class="empty">没有找到相关歌曲</view>
@@ -93,11 +99,11 @@
         data-rate="0.5"
       >0.5x</view>
       <view
-        class="speed-btn {{rate === 1 ? 'speed-on' : ''}} {{shaking.rate1 ? 'speed-shake' : ''}}"
+        class="speed-btn {{rate === 0.8 ? 'speed-on' : ''}} {{shaking.rate08 ? 'speed-shake' : ''}}"
         hover-class="speed-hover"
         bindtap="setRate"
-        data-rate="1"
-      >1x</view>
+        data-rate="0.8"
+      >0.8x</view>
     </view>
 
     <view wx:if="{{!videoFull}}" class="video-tip">替换为您自己的舞曲视频即可精准匹配</view>

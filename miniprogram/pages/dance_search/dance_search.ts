@@ -111,16 +111,37 @@ Component({
     subTitle: '',
     isScoped: false,
     videoFull: false, // true=满屏播放（推荐视频），false=居中卡片（歌曲）
-    rate: 1,
+    rate: 0.8,
     shaking: {
       rate05: false,
-      rate1: false,
+      rate08: false,
     },
     fireworkActive: false,
     showPraise: false,
+    // 收藏状态
+    favoritedKeys: {} as Record<string, boolean>,
+    // 推荐视频：竖屏广场舞。cover 留空时用渐变占位封面；
+    // 正式上线把 cover 换成云服务器封面图地址、video 换成对应视频文件名即可。
+    recommendVideos: [
+      { title: '最炫民族风 · 背面教学', type: '广场舞', video: 'gcd-01.mp4', cover: '' },
+      { title: '小苹果 · 零基础跟练', type: '广场舞', video: 'gcd-02.mp4', cover: '' },
+      { title: '荷塘月色 · 慢动作分解', type: '广场舞', video: 'gcd-03.mp4', cover: '' },
+      { title: '酒醉的蝴蝶 · 广场版', type: '广场舞', video: 'gcd-04.mp4', cover: '' },
+      { title: '站在草原望北京 · 队形示范', type: '广场舞', video: 'gcd-05.mp4', cover: '' },
+      { title: '套马杆 · 完整版', type: '广场舞', video: 'gcd-06.mp4', cover: '' },
+    ] as { title: string; type: string; video: string; cover: string }[],
   },
   methods: {
     onLoad(options: any) {
+      // 加载用户上传的视频，合并到歌曲列表（同步合并，避免 setData 异步问题）
+      const uploadedSongs = this.getUploadedSongs()
+      const allSongs = [...this.data.songs, ...uploadedSongs]
+      this.setData({ songs: allSongs })
+      console.log('[dance_search] allSongs count:', allSongs.length, 'isScoped will be:', options && options.type)
+
+      // 加载收藏状态
+      this.loadFavorites()
+
       // 从首页带舞种参数跳进来：?type=广场舞
       if (options && options.type) {
         const type = decodeURIComponent(options.type)
@@ -143,13 +164,90 @@ Component({
               currentType: type,
               videoFull: false,
               showVideo: true,
-              rate: 1,
+              rate: 0.8,
             })
           })
         }
       }
       this.applyFilter()
     },
+
+    // 获取用户上传的歌曲列表（同步）
+    getUploadedSongs(): Song[] {
+      try {
+        const uploadList = wx.getStorageSync('uploaded_videos')
+        console.log('[dance_search] getUploadedSongs raw:', JSON.stringify(uploadList))
+        if (!uploadList) return []
+        const list = Array.isArray(uploadList) ? uploadList : []
+        return list.map((item: any) => ({
+          name: item.name,
+          artist: '用户上传',
+          type: item.type || '未分类',
+          duration: item.duration || '00:00',
+          video: item.video,
+        }))
+      } catch (e) {
+        console.error('[getUploadedSongs] fail', e)
+        return []
+      }
+    },
+
+    // 加载收藏状态
+    loadFavorites() {
+      const fav = wx.getStorageSync('favorite_songs') || {}
+      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+    },
+
+    // 切换收藏
+    toggleFavorite(e: any) {
+      const key = e.currentTarget.dataset.key as string
+      const index = e.currentTarget.dataset.index
+
+      // 从 songs 里找到对应歌曲信息
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
+
+      const fav = { ...this.data.favoritedKeys }
+      if (fav[key]) {
+        delete fav[key]
+        // 也从收藏列表中移除
+        const list = wx.getStorageSync('favorite_songs_list') || []
+        const arr = Array.isArray(list) ? list : []
+        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
+        wx.setStorageSync('favorite_songs_list', newList)
+        wx.showToast({ title: '取消收藏', icon: 'none' })
+      } else {
+        fav[key] = true
+        // 保存完整的歌曲信息到收藏列表
+        this.saveFavoriteSong(song)
+        wx.showToast({ title: '已收藏', icon: 'success' })
+      }
+      this.setData({ favoritedKeys: fav })
+      wx.setStorageSync('favorite_songs', fav)
+    },
+
+    // 保存收藏的完整歌曲信息
+    saveFavoriteSong(song: any) {
+      const list = wx.getStorageSync('favorite_songs_list') || []
+      const arr = Array.isArray(list) ? list : []
+      // 不重复添加
+      const key = song.name + '|' + song.type
+      const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
+      if (!exists) {
+        arr.push({
+          name: song.name,
+          artist: song.artist,
+          type: song.type,
+          duration: song.duration,
+          video: song.video,
+          favoritedAt: Date.now(),
+        })
+        wx.setStorageSync('favorite_songs_list', arr)
+      }
+    },
+
+    // 搜索输入
     onSearchInput(e: any) {
       this.setData({ keyword: e.detail.value })
       this.applyFilter()
@@ -170,8 +268,10 @@ Component({
 
     // 点击歌曲 → 播放对应视频（居中卡片样式）
     onSongTap(e: any) {
-      const name = e.currentTarget.dataset.name as string
-      const song = this.data.songs.find((s) => s.name === name)
+      const index = e.currentTarget.dataset.index
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
       if (!song) return
       const fileID = resolveVideo(song.video)
       playVideo(fileID).then((url) => {
@@ -181,7 +281,7 @@ Component({
           currentType: song.type,
           videoFull: false,
           showVideo: true,
-          rate: 1,
+          rate: 0.8,
           fireworkActive: false,
           showPraise: false,
         })
@@ -189,6 +289,26 @@ Component({
       })
     },
 
+    // 点击推荐视频 → 满屏播放（竖屏）
+    onOpenRecVideo(e: any) {
+      const title = e.currentTarget.dataset.title as string
+      const v = this.data.recommendVideos.find((r) => r.title === title)
+      if (!v) return
+      const fileID = resolveVideo(v.video)
+      playVideo(fileID).then((url) => {
+        this.setData({
+          currentVideo: url,
+          currentSong: v.title,
+          currentType: v.type,
+          videoFull: true,
+          showVideo: true,
+          rate: 0.8,
+          fireworkActive: false,
+          showPraise: false,
+        })
+        this.data._fireReady = false
+      })
+    },
 
     // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
     onGoDance() {
@@ -197,14 +317,15 @@ Component({
         url:
           `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}` +
           `&song=${encodeURIComponent(this.data.currentSong)}` +
-          `&type=${encodeURIComponent(this.data.currentType)}`,
+          `&type=${encodeURIComponent(this.data.currentType)}` +
+          `&rate=${this.data.rate}`,
       })
     },
 
     // 关闭视频
     onCloseVideo() {
       this.stopFirework()
-      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 1, fireworkActive: false, showPraise: false })
+      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
     },
 
     // 视频播放结束 → 礼花 + 你真棒
@@ -335,7 +456,7 @@ Component({
       if (rate === this.data.rate) return
 
       // 按钮颤动 key
-      const keyMap: Record<number, string> = { 0.5: 'rate05', 1: 'rate1' }
+      const keyMap: Record<number, string> = { 0.5: 'rate05', 0.8: 'rate08' }
       const key = keyMap[rate]
       if (key) {
         this.setData({ [`shaking.${key}`]: true })

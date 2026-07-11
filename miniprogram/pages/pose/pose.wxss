@@ -377,9 +377,8 @@
 /* 倍速选择栏 */
 .speed-panel {
   position: absolute;
-  left: 50%;
+  left: 32rpx;
   bottom: 120rpx;
-  transform: translateX(-50%);
   display: flex;
   gap: 16rpx;
   z-index: 20;

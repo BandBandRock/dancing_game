@@ -9,6 +9,7 @@ interface Song {
 }
 
 import { toCloudFileID } from '../../utils/cloudMedia'
+import { uploadVideo as cosUpload } from '../../utils/cosUpload'
 
 function resolveVideo(video: string): string {
   return toCloudFileID(video)
@@ -90,6 +91,7 @@ Component({
   data: {
     keyword: '',
     filtered: [] as Song[],
+    favoritedKeys: {} as Record<string, boolean>,
     shaking: {
       search: false,
       ballroom: false,
@@ -97,6 +99,12 @@ Component({
       folk: false,
       health: false,
       debug: false,
+    },
+  },
+
+  lifetimes: {
+    attached() {
+      this.loadFavorites()
     },
   },
 
@@ -119,11 +127,26 @@ Component({
       this.applyFilter()
     },
 
+    // 获取全部歌曲（内置 + 上传）
+    getAllSongs() {
+      const uploadList = wx.getStorageSync('uploaded_videos') || []
+      const list = Array.isArray(uploadList) ? uploadList : []
+      const uploaded: Song[] = list.map((item: any) => ({
+        name: item.name,
+        artist: '用户上传',
+        type: item.type || '未分类',
+        duration: item.duration || '00:00',
+        video: item.video,
+      }))
+      return [...ALL_SONGS, ...uploaded]
+    },
+
     // 实时匹配
     applyFilter() {
       const kw = this.data.keyword.trim().toLowerCase()
       if (!kw) { this.setData({ filtered: [] }); return }
-      const results = ALL_SONGS.filter((s) =>
+      const allSongs = this.getAllSongs()
+      const results = allSongs.filter((s) =>
         s.name.toLowerCase().includes(kw) ||
         s.artist.toLowerCase().includes(kw) ||
         s.type.includes(kw)
@@ -131,10 +154,55 @@ Component({
       this.setData({ filtered: results })
     },
 
+    // 加载收藏状态
+    loadFavorites() {
+      const fav = wx.getStorageSync('favorite_songs') || {}
+      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+    },
+
+    // 切换收藏
+    toggleFavorite(e: any) {
+      const key = e.currentTarget.dataset.key as string
+      const index = e.currentTarget.dataset.index
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
+
+      const fav = { ...this.data.favoritedKeys }
+      const list = wx.getStorageSync('favorite_songs_list') || []
+      const arr = Array.isArray(list) ? list : []
+
+      if (fav[key]) {
+        delete fav[key]
+        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
+        wx.setStorageSync('favorite_songs_list', newList)
+        wx.showToast({ title: '取消收藏', icon: 'none' })
+      } else {
+        fav[key] = true
+        const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
+        if (!exists) {
+          arr.push({
+            name: song.name,
+            artist: song.artist,
+            type: song.type,
+            duration: song.duration,
+            video: song.video,
+            favoritedAt: Date.now(),
+          })
+          wx.setStorageSync('favorite_songs_list', arr)
+        }
+        wx.showToast({ title: '已收藏', icon: 'success' })
+      }
+      this.setData({ favoritedKeys: fav })
+      wx.setStorageSync('favorite_songs', fav)
+    },
+
     // 点击搜索结果 → 到 dance_search 打开对应视频
     onResultTap(e: any) {
-      const name = e.currentTarget.dataset.name as string
-      const song = ALL_SONGS.find((s) => s.name === name)
+      const index = e.currentTarget.dataset.index
+      const filtered = this.data.filtered
+      if (index === undefined || index < 0 || index >= filtered.length) return
+      const song = filtered[index]
       if (!song) return
       const videoUrl = resolveVideo(song.video)
       wx.navigateTo({
@@ -193,6 +261,94 @@ Component({
       setTimeout(() => {
         this.setData({ [`shaking.${name}`]: false })
       }, 350)
+    },
+
+    // 上传舞蹈
+    onUploadTap() {
+      const types = ['广场舞', '交谊舞', '民族舞', '健身操', '鬼步舞']
+      wx.showActionSheet({
+        itemList: types,
+        success: (res) => {
+          const danceType = types[res.tapIndex]
+          // 延迟一点再调 chooseMedia，避免 actionSheet 关闭动画干扰
+          setTimeout(() => this.chooseVideo(danceType), 200)
+        },
+        fail: () => {},
+      })
+    },
+
+    chooseVideo(danceType: string) {
+      wx.chooseMedia({
+        count: 1,
+        mediaType: ['video'],
+        sourceType: ['album'],
+        maxDuration: 600,
+        camera: 'back',
+        success: (res) => {
+          const tempPath = res.tempFiles[0].tempFilePath
+          // 弹出输入框让用户输入歌名
+          wx.showModal({
+            title: '输入歌曲名称',
+            content: '请为上传的舞蹈起个名字',
+            editable: true,
+            placeholderText: '如：我的舞蹈作品',
+            success: (modalRes) => {
+              if (!modalRes.confirm) {
+                // 用户点了取消，不上传
+                return
+              }
+              let songName = (modalRes.content || '').trim()
+              if (!songName) {
+                // 用户没输入内容，用默认名
+                songName = ''
+              }
+              this.uploadVideo(tempPath, danceType, songName)
+            },
+          })
+        },
+        fail: (err) => {
+          console.error('[upload] chooseMedia fail', err)
+          if (err.errMsg && err.errMsg.includes('cancel')) return
+          wx.showToast({ title: '选择视频失败', icon: 'none' })
+        },
+      })
+    },
+
+    uploadVideo(filePath: string, danceType: string, songName: string) {
+      wx.showLoading({ title: '上传中...', mask: true })
+      cosUpload({
+        filePath,
+        fileName: `user_dance_${Date.now()}.mp4`,
+        timeoutMs: 300000,
+        onProgress: (p) => {
+          wx.showLoading({ title: `上传 ${Math.round(p * 100)}%`, mask: true })
+        },
+      }).then((result) => {
+        this.saveRecord(result.fileID, danceType, songName)
+      }).catch((err) => {
+        wx.hideLoading()
+        console.error('[upload] 云上传失败', err)
+        wx.showToast({ title: '上传失败，请重试', icon: 'none' })
+      })
+    },
+
+    saveRecord(videoFileID: string, danceType: string, songName: string) {
+      // 获取上传列表（已有的）
+      let uploadList = wx.getStorageSync('uploaded_videos') || []
+      if (typeof uploadList === 'string') uploadList = []
+      const shortName = songName || '上传舞蹈_' + (uploadList.length + 1)
+      const record = {
+        id: Date.now(),
+        name: shortName,
+        type: danceType,
+        video: videoFileID,
+        duration: '00:00',
+        createTime: new Date().toISOString(),
+      }
+      uploadList.push(record)
+      wx.setStorageSync('uploaded_videos', uploadList)
+      wx.hideLoading()
+      wx.showToast({ title: '上传成功', icon: 'success' })
     },
   },
 })
