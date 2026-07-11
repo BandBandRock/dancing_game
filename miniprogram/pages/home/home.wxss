@@ -35,6 +35,12 @@ page {
   line-height: 80rpx;
 }
 
+.search-clear {
+  font-size: 32rpx;
+  color: #bbb;
+  padding: 0 16rpx;
+}
+
 .search-btn {
   background: #07c160;
   color: #fff;
@@ -202,4 +208,76 @@ page {
 
 .debug-gear.gear-spin .debug-gear-icon {
   animation: gear-spin 0.5s linear;
+}
+
+/* 搜索结果列表（首页内联） */
+.search-results {
+  margin-top: 8rpx;
+  padding-bottom: 40rpx;
+}
+
+.search-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  margin-bottom: 18rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.search-item-play {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: #fff;
+  font-size: 32rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 24rpx;
+  flex-shrink: 0;
+}
+
+.search-item-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  min-width: 0;
+}
+
+.search-item-name {
+  font-size: 34rpx;
+  color: #222;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.search-item-sub {
+  font-size: 24rpx;
+  color: #999;
+}
+
+.search-item-type {
+  font-size: 24rpx;
+  color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.1);
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+}
+
+.search-empty {
+  padding: 120rpx 0;
+  text-align: center;
+}
+
+.search-empty-text {
+  font-size: 30rpx;
+  color: #999;
 }

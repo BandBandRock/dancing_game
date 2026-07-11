@@ -1,105 +1,139 @@
 // search.ts
-interface SearchResult {
-  id: number
-  title: string
-  desc: string
-  icon: string
-  tag: string
+interface Song {
+  name: string
+  artist: string
+  type: string
+  duration: string
+  video: string
 }
 
-// 舞种数据库
-const DANCE_DB: { keys: string[]; category: string; results: SearchResult[] }[] = [
-  {
-    keys: ['华尔兹', '探戈', '快步', '狐步', '恰恰', '伦巴', '桑巴', '斗牛', '牛仔', '交际舞', '维也纳'],
-    category: '交际舞',
-    results: [
-      { id: 1, title: '蓝色多瑙河', desc: '华尔兹经典舞曲 · 3/4拍', icon: '💙', tag: '华尔兹' },
-      { id: 2, title: '春之声圆舞曲', desc: '维也纳华尔兹 · 优雅旋转', icon: '🌸', tag: '维也纳华尔兹' },
-      { id: 3, title: '一步之遥', desc: '探戈名曲 · 激情有力', icon: '💃', tag: '探戈' },
-      { id: 4, title: '卡门序曲', desc: '斗牛舞 · 气势恢宏', icon: '🐂', tag: '斗牛' },
-      { id: 5, title: '月亮代表我的心', desc: '伦巴慢舞 · 经典情歌', icon: '🌙', tag: '伦巴' },
-      { id: 6, title: '爱的华尔兹', desc: '华尔兹入门 · 节奏清晰', icon: '💕', tag: '华尔兹' },
-      { id: 7, title: '西班牙斗牛士', desc: '斗牛进行曲 · 热烈奔放', icon: '🇪🇸', tag: '斗牛' },
-      { id: 8, title: '杜鹃圆舞曲', desc: '快步舞 · 轻快活泼', icon: '🕊️', tag: '快步' },
-    ],
-  },
-  {
-    keys: ['广场舞', '健身操', '秧歌', '扇子', '腰鼓', '拍手', '步操', '广场', '跳操'],
-    category: '广场舞',
-    results: [
-      { id: 11, title: '小苹果', desc: '全民广场舞 · 简单易学', icon: '🍎', tag: '广场舞' },
-      { id: 12, title: '最炫民族风', desc: '民族风广场舞 · 节奏欢快', icon: '💨', tag: '民族风' },
-      { id: 13, title: '荷塘月色', desc: '优雅广场舞 · 动作柔美', icon: '🌺', tag: '广场舞' },
-      { id: 14, title: '舞动中国', desc: '健身操 · 活力四射', icon: '🇨🇳', tag: '健身操' },
-      { id: 15, title: '火红的萨日朗', desc: '秧歌舞 · 草原风情', icon: '🔥', tag: '秧歌' },
-      { id: 16, title: '中国美', desc: '扇子舞 · 大气磅礴', icon: '🎋', tag: '扇子舞' },
-    ],
-  },
-  {
-    keys: ['民族舞', '蒙古', '藏族', '傣族', '彝族', '苗族', '维吾尔', '朝鲜族', '琵琶', '古筝', '二胡', '民歌'],
-    category: '民族舞',
-    results: [
-      { id: 21, title: '赛马', desc: '蒙古舞 · 二胡名曲 · 气势如虹', icon: '🐎', tag: '蒙古舞' },
-      { id: 22, title: '彩云之南', desc: '傣族舞 · 孔雀翩翩', icon: '🦚', tag: '傣族舞' },
-      { id: 23, title: '掀起你的盖头来', desc: '维吾尔族舞 · 欢快热烈', icon: '💃', tag: '维吾尔族' },
-      { id: 24, title: '阿里郎', desc: '朝鲜族舞 · 抒情悠扬', icon: '🏔️', tag: '朝鲜族' },
-      { id: 25, title: '十面埋伏', desc: '琵琶独奏 · 中国古典', icon: '🎵', tag: '琵琶曲' },
-      { id: 26, title: '高山流水', desc: '古筝名曲 · 意境深远', icon: '⛰️', tag: '古筝曲' },
-    ],
-  },
-  {
-    keys: ['太极', '八段锦', '五禽戏', '经络', '艾灸', '食疗', '冥想', '养生操', '养身', '养生', '足浴', '推拿'],
-    category: '养生操',
-    results: [
-      { id: 31, title: '二十四式太极拳', desc: '太极拳标准套路 · 柔中带刚', icon: '☯️', tag: '太极' },
-      { id: 32, title: '八段锦', desc: '古代导引术 · 舒展全身', icon: '🧘', tag: '八段锦' },
-      { id: 33, title: '五禽戏', desc: '华佗养生功法 · 虎鹿熊猿鸟', icon: '🐯', tag: '五禽戏' },
-      { id: 34, title: '经络拍打操', desc: '疏通经络 · 活血化瘀', icon: '👐', tag: '经络' },
-      { id: 35, title: '养生食疗歌', desc: '四季食疗配方 · 养生知识', icon: '🥗', tag: '食疗' },
-      { id: 36, title: '冥想放松', desc: '静心冥想 · 身心平衡', icon: '🧘', tag: '冥想' },
-    ],
-  },
+const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
+
+function resolveVideo(video: string): string {
+  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+}
+
+const ALL_SONGS: Song[] = [
+  // —— 广场舞（12 首）——
+  { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'https://dancing-1253975745.cos.ap-guangzhou.myqcloud.com/v1_coco17.mp4' },
+  { name: '小苹果', artist: '筷子兄弟', type: '广场舞', duration: '03:22', video: 'gcd-02.mp4' },
+  { name: '荷塘月色', artist: '凤凰传奇', type: '广场舞', duration: '03:53', video: 'gcd-03.mp4' },
+  { name: '酒醉的蝴蝶', artist: '崔伟立', type: '广场舞', duration: '03:45', video: 'gcd-04.mp4' },
+  { name: '站在草原望北京', artist: '乌兰图雅', type: '广场舞', duration: '03:28', video: 'gcd-05.mp4' },
+  { name: '自由飞翔', artist: '凤凰传奇', type: '广场舞', duration: '03:57', video: 'gcd-06.mp4' },
+  { name: '月亮之上', artist: '凤凰传奇', type: '广场舞', duration: '03:46', video: 'gcd-07.mp4' },
+  { name: '套马杆', artist: '乌兰图雅', type: '广场舞', duration: '03:39', video: 'gcd-08.mp4' },
+  { name: '火火的姑娘', artist: '东方红艳', type: '广场舞', duration: '03:36', video: 'gcd-09.mp4' },
+  { name: '江南Style', artist: '蔡依林', type: '广场舞', duration: '03:44', video: 'gcd-10.mp4' },
+  { name: '山路十八弯', artist: '李琼', type: '广场舞', duration: '03:28', video: 'gcd-11.mp4' },
+  { name: '九妹', artist: '黄鹤翔', type: '广场舞', duration: '03:42', video: 'gcd-12.mp4' },
+
+  // —— 交谊舞（12 首）——
+  { name: '北江美', artist: '刘小路', type: '交谊舞', duration: '04:10', video: 'jyx-01.mp4' },
+  { name: '心雨', artist: '杨钰莹', type: '交谊舞', duration: '04:16', video: 'jyx-02.mp4' },
+  { name: '走四方', artist: '韩磊', type: '交谊舞', duration: '04:08', video: 'jyx-03.mp4' },
+  { name: '南屏晚钟', artist: '蔡琴', type: '交谊舞', duration: '04:22', video: 'jyx-04.mp4' },
+  { name: '甜蜜蜜', artist: '邓丽君', type: '交谊舞', duration: '03:28', video: 'jyx-05.mp4' },
+  { name: '难忘今宵', artist: '李谷一', type: '交谊舞', duration: '03:58', video: 'jyx-06.mp4' },
+  { name: '友谊地久天长', artist: '黑鸭子', type: '交谊舞', duration: '03:35', video: 'jyx-07.mp4' },
+  { name: '月亮代表我的心', artist: '邓丽君', type: '交谊舞', duration: '03:30', video: 'jyx-08.mp4' },
+  { name: '一剪梅', artist: '费玉清', type: '交谊舞', duration: '03:50', video: 'jyx-09.mp4' },
+  { name: '彩云追月', artist: '张也', type: '交谊舞', duration: '03:44', video: 'jyx-10.mp4' },
+  { name: '渔光曲', artist: '腾格尔', type: '交谊舞', duration: '04:02', video: 'jyx-11.mp4' },
+  { name: '何日君再来', artist: '邓丽君', type: '交谊舞', duration: '03:25', video: 'jyx-12.mp4' },
+
+  // —— 民族舞（12 首）——
+  { name: '多谢了', artist: '龚玥', type: '民族舞', duration: '04:02', video: 'mz-01.mp4' },
+  { name: '我从草原来', artist: '凤凰传奇', type: '民族舞', duration: '03:48', video: 'mz-02.mp4' },
+  { name: '美丽的草原我的家', artist: '德德玛', type: '民族舞', duration: '03:55', video: 'mz-03.mp4' },
+  { name: '青藏高原', artist: '韩红', type: '民族舞', duration: '03:48', video: 'mz-04.mp4' },
+  { name: '茉莉花', artist: '宋祖英', type: '民族舞', duration: '03:30', video: 'mz-05.mp4' },
+  { name: '康定情歌', artist: '降央卓玛', type: '民族舞', duration: '03:42', video: 'mz-06.mp4' },
+  { name: '敖包相会', artist: '刀郎', type: '民族舞', duration: '03:38', video: 'mz-07.mp4' },
+  { name: '掀起你的盖头来', artist: '克里木', type: '民族舞', duration: '03:20', video: 'mz-08.mp4' },
+  { name: '阿里山的姑娘', artist: '卓依婷', type: '民族舞', duration: '03:33', video: 'mz-09.mp4' },
+  { name: '月光下的凤尾竹', artist: '葫芦丝', type: '民族舞', duration: '04:10', video: 'mz-10.mp4' },
+  { name: '山丹丹开花红艳艳', artist: '阿宝', type: '民族舞', duration: '03:52', video: 'mz-11.mp4' },
+  { name: '天路', artist: '韩红', type: '民族舞', duration: '04:18', video: 'mz-12.mp4' },
+
+  // —— 健身操（12 首）——
+  { name: '全民健身操', artist: '健身舞曲', type: '健身操', duration: '05:20', video: 'js-01.mp4' },
+  { name: '本草纲目', artist: '刘畊宏', type: '健身操', duration: '03:30', video: 'js-02.mp4' },
+  { name: '龙拳', artist: '周杰伦', type: '健身操', duration: '04:00', video: 'js-03.mp4' },
+  { name: '快乐崇拜', artist: '潘玮柏', type: '健身操', duration: '03:45', video: 'js-04.mp4' },
+  { name: '健康歌', artist: '范晓萱', type: '健身操', duration: '03:20', video: 'js-05.mp4' },
+  { name: '站在高岗上', artist: '张惠妹', type: '健身操', duration: '03:38', video: 'js-06.mp4' },
+  { name: '卡路里', artist: '火箭少女101', type: '健身操', duration: '03:05', video: 'js-07.mp4' },
+  { name: '兔子舞', artist: '儿童健身', type: '健身操', duration: '03:15', video: 'js-08.mp4' },
+  { name: '本草纲目(完整版)', artist: '龙拳组合', type: '健身操', duration: '05:10', video: 'js-09.mp4' },
+  { name: '向快乐出发', artist: '健身舞曲', type: '健身操', duration: '04:30', video: 'js-10.mp4' },
+  { name: '啦啦操进行曲', artist: '健身舞曲', type: '健身操', duration: '04:05', video: 'js-11.mp4' },
+  { name: '最炫健身操', artist: '广场舞曲', type: '健身操', duration: '04:48', video: 'js-12.mp4' },
+
+  // —— 鬼步舞（12 首）——
+  { name: '鬼步舞串烧', artist: 'DJ舞曲', type: '鬼步舞', duration: '06:05', video: 'gb-01.mp4' },
+  { name: '电音之王', artist: 'DJ舞曲', type: '鬼步舞', duration: '05:30', video: 'gb-02.mp4' },
+  { name: '踏浪(鬼步版)', artist: '网络DJ', type: '鬼步舞', duration: '04:20', video: 'gb-03.mp4' },
+  { name: 'Sandstorm', artist: 'Darude', type: '鬼步舞', duration: '03:45', video: 'gb-04.mp4' },
+  { name: '野狼disco', artist: '宝石Gem', type: '鬼步舞', duration: '03:58', video: 'gb-05.mp4' },
+  { name: '沙漠骆驼', artist: '展展与罗罗', type: '鬼步舞', duration: '04:35', video: 'gb-06.mp4' },
+  { name: '社会摇', artist: '萧全', type: '鬼步舞', duration: '03:40', video: 'gb-07.mp4' },
+  { name: '海草舞', artist: '萧全', type: '鬼步舞', duration: '03:30', video: 'gb-08.mp4' },
+  { name: '惊雷', artist: '快手DJ', type: '鬼步舞', duration: '04:10', video: 'gb-09.mp4' },
+  { name: '摇摇摇', artist: '鬼步DJ', type: '鬼步舞', duration: '05:00', video: 'gb-10.mp4' },
+  { name: '逆战(鬼步版)', artist: '张杰', type: '鬼步舞', duration: '04:12', video: 'gb-11.mp4' },
+  { name: '倍儿爽', artist: '大张伟', type: '鬼步舞', duration: '03:25', video: 'gb-12.mp4' },
 ]
 
 Component({
   data: {
     keyword: '',
-    category: '',
-    results: [] as SearchResult[],
+    results: [] as Song[],
   },
 
   lifetimes: {
     attached() {
+      // 从首页带入的关键词
       const pages = getCurrentPages()
       const currentPage = pages[pages.length - 1]
       const options = (currentPage as any).options || {}
       const keyword = decodeURIComponent(options.keyword || '')
       if (keyword) {
-        const match = this.findCategory(keyword)
-        if (match) {
-          this.setData({
-            keyword,
-            category: match.category,
-            results: match.results,
-          })
-        } else {
-          this.setData({ keyword, category: '未知分类' })
-        }
+        this.setData({ keyword })
+        this.doSearch()
       }
     },
   },
 
   methods: {
-    findCategory(keyword: string) {
-      const k = keyword.toLowerCase()
-      for (const db of DANCE_DB) {
-        for (const key of db.keys) {
-          if (k.includes(key)) {
-            return { category: db.category, results: db.results }
-          }
-        }
-      }
-      return null
+    onKeywordInput(e: any) {
+      this.setData({ keyword: e.detail.value })
+    },
+
+    onClear() {
+      this.setData({ keyword: '', results: [] })
+    },
+
+    doSearch() {
+      const kw = this.data.keyword.trim().toLowerCase()
+      if (!kw) { this.setData({ results: [] }); return }
+
+      const results = ALL_SONGS.filter((s) =>
+        s.name.toLowerCase().includes(kw) ||
+        s.artist.toLowerCase().includes(kw) ||
+        s.type.includes(kw)
+      )
+      this.setData({ results })
+    },
+
+    onSongTap(e: any) {
+      const name = e.currentTarget.dataset.name as string
+      const song = ALL_SONGS.find((s) => s.name === name)
+      if (!song) return
+      const videoUrl = resolveVideo(song.video)
+      wx.navigateTo({
+        url: `../dance_search/dance_search?video=${encodeURIComponent(videoUrl)}&song=${encodeURIComponent(song.name)}&type=${encodeURIComponent(song.type)}`,
+      })
     },
   },
 })

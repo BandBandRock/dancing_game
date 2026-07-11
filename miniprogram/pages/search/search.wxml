@@ -1,29 +1,50 @@
 <!--search.wxml-->
-<navigation-bar title="搜索结果" back="{{true}}" color="black" background="#FFF"></navigation-bar>
-<scroll-view class="page" scroll-y type="list">
-  <view class="header">
-    <text class="header-title">搜索：</text>
-    <text class="header-keyword">"{{keyword}}"</text>
-    <text class="header-category">分类：{{category}}</text>
+<navigation-bar title="搜索" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<view class="page">
+  <!-- 搜索条 -->
+  <view class="search-bar">
+    <text class="search-icon">🔍</text>
+    <input
+      class="search-input"
+      placeholder="搜索歌曲 / 歌手 / 类型"
+      placeholder-class="ph"
+      value="{{keyword}}"
+      bindinput="onKeywordInput"
+      bindconfirm="doSearch"
+      confirm-type="search"
+    />
+    <text wx:if="{{keyword}}" class="search-clear" bindtap="onClear">✕</text>
+    <button class="search-btn" bindtap="doSearch">搜索</button>
   </view>
 
-  <view class="result-list" wx:if="{{results.length > 0}}">
-    <view
-      class="result-item"
-      wx:for="{{results}}"
-      wx:key="id"
-    >
-      <view class="result-icon">{{item.icon}}</view>
-      <view class="result-info">
-        <text class="result-title">{{item.title}}</text>
-        <text class="result-desc">{{item.desc}}</text>
+  <!-- 搜索结果 -->
+  <scroll-view wx:if="{{keyword}}" class="result-scroll" scroll-y type="list">
+    <view class="result-list" wx:if="{{results.length > 0}}">
+      <view
+        class="result-item"
+        wx:for="{{results}}"
+        wx:key="name"
+        bindtap="onSongTap"
+        data-name="{{item.name}}"
+      >
+        <view class="play-btn">▶</view>
+        <view class="result-info">
+          <text class="result-title">{{item.name}}</text>
+          <text class="result-desc">{{item.artist}} · {{item.duration}}</text>
+        </view>
+        <text class="result-tag">{{item.type}}</text>
       </view>
-      <view class="result-tag">{{item.tag}}</view>
     </view>
-  </view>
 
-  <view class="empty-tip" wx:else>
-    <text class="empty-emoji">🔍</text>
-    <text class="empty-text">未找到相关结果</text>
+    <view class="empty-tip" wx:else>
+      <text class="empty-emoji">🔍</text>
+      <text class="empty-text">没有找到相关歌曲</text>
+    </view>
+  </scroll-view>
+
+  <!-- 未搜索时的提示 -->
+  <view wx:else class="search-hint">
+    <text class="hint-emoji">🎵</text>
+    <text class="hint-text">输入关键词搜索舞曲</text>
   </view>
-</scroll-view>
+</view>

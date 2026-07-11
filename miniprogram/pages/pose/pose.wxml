@@ -10,8 +10,35 @@
     controls="{{true}}"
     show-center-play-btn="{{true}}"
     object-fit="contain"
+    loop="{{false}}"
+    playback-rate="{{rate}}"
     bindended="onVideoEnded"
   ></video>
+
+  <!-- 礼花 canvas 层 -->
+  <canvas
+    type="2d"
+    id="fireCanvas"
+    class="fire-canvas"
+    hidden="{{!fireworkActive}}"
+  ></canvas>
+  <view wx:if="{{showPraise}}" class="praise-text">你真棒</view>
+
+  <!-- 倍速选择栏 -->
+  <view wx:if="{{danceVideo}}" class="speed-panel">
+    <view
+      class="speed-tag {{rate === 0.5 ? 'speed-tag-on' : ''}} {{shaking.s05 ? 'tag-shake' : ''}}"
+      hover-class="tag-hover"
+      bindtap="setRate"
+      data-rate="0.5"
+    >0.5x</view>
+    <view
+      class="speed-tag {{rate === 1 ? 'speed-tag-on' : ''}} {{shaking.s1 ? 'tag-shake' : ''}}"
+      hover-class="tag-hover"
+      bindtap="setRate"
+      data-rate="1"
+    >1x</view>
+  </view>
   <view wx:else class="main-empty">
     <text class="main-empty-text">未选择教学视频</text>
   </view>
