@@ -1,0 +1,47 @@
+/* pages/playvideo/playvideo.wxss 全屏播放 */
+.root {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  overflow: hidden;
+}
+.player-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+.player-empty {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  font-size: 30rpx;
+}
+/* 左上角退出键 */
+.exit-btn {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 20rpx);
+  left: 24rpx;
+  z-index: 100;
+  width: 76rpx;
+  height: 76rpx;
+  line-height: 76rpx;
+  text-align: center;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #fff;
+}
+.exit-icon {
+  font-size: 40rpx;
+  color: #fff;
+  line-height: 76rpx;
+}

@@ -1,45 +1,64 @@
-<!--history.wxml-->
-<navigation-bar title="历史 - 登录记录" back="{{true}}" color="black" background="#FFF"></navigation-bar>
+<!--history.wxml 我的跳舞历史-->
+<navigation-bar title="我的跳舞历史" back="{{false}}" color="black" background="#FFF"></navigation-bar>
+<!-- 明确的返回首页按钮（普通 view，真机 Skyline 下稳定可见可点，不依赖 mask 图标） -->
+<view class="topbar">
+  <view class="home-btn" bindtap="onGoHome">🏠 返回首页</view>
+</view>
 <scroll-view class="page" scroll-y type="list">
   <!-- 统计卡片 -->
   <view class="stats-card">
     <view class="stat-item">
       <text class="stat-num">{{totalCount}}</text>
-      <text class="stat-label">登录次数</text>
+      <text class="stat-label">跳舞次数</text>
     </view>
-    <view class="stat-divider"></view>
-    <view class="stat-item">
-      <text class="stat-num">{{totalHours}}</text>
-      <text class="stat-label">累计时长(小时)</text>
-    </view>
+    <!-- 垃圾桶：点一下进入选择模式；选择模式下再点即删除已选 -->
+    <view class="trash {{selecting ? 'active' : ''}}" wx:if="{{list.length > 0}}" bindtap="onTrashTap">🗑️</view>
   </view>
 
-  <!-- 登录记录列表 -->
-  <view class="list-title">登录记录</view>
-  <view class="list-area" wx:if="{{records.length > 0}}">
-    <view
-      class="record-item"
-      wx:for="{{records}}"
-      wx:key="id"
-    >
-      <view class="record-left">
-        <text class="record-icon">{{item.icon}}</text>
-        <view class="record-info">
-          <text class="record-date">{{item.date}}</text>
-          <text class="record-time">{{item.time}}</text>
+  <!-- 列表标题 / 选择模式操作条 -->
+  <view class="list-title" wx:if="{{!selecting}}">跳舞记录</view>
+  <view class="select-bar" wx:else>
+    <text class="select-cancel" bindtap="onCancel">取消</text>
+    <text class="select-info">已选 {{selectedCount}} 项</text>
+    <text class="select-one" bindtap="onTrashTap">删除</text>
+  </view>
+
+  <!-- 跳舞记录列表 -->
+  <view class="list-area" wx:if="{{list.length > 0}}">
+    <view class="record-card" wx:for="{{list}}" wx:key="id" data-id="{{item.id}}">
+      <!-- 选择模式下左侧的小圆圈：点一下切换选中 -->
+      <view
+        wx:if="{{selecting}}"
+        class="pick-circle {{selectedMap[item.id] ? 'on' : ''}}"
+        data-id="{{item.id}}"
+        catchtap="onToggleCircle"
+      ></view>
+      <view class="record-main">
+        <view class="record-top">
+          <text class="record-song">{{item.song}}</text>
+          <text class="record-score">{{item.scoreText}}</text>
         </view>
-      </view>
-      <view class="record-center">
-        <text class="record-duration">{{item.duration}}</text>
-      </view>
-      <view class="record-right">
-        <text class="record-thanks">{{item.thanks}}</text>
+        <view class="record-time">
+          <text class="record-date">{{item.dateText}}</text>
+          <text class="record-dot">·</text>
+          <text class="record-clock">{{item.timeText}}</text>
+        </view>
+        <!-- 自己跳舞的视频封面：点击满屏播放 -->
+        <view class="record-video" bindtap="onPlay" data-id="{{item.id}}">
+          <view class="video-ph">
+            <text class="video-emoji">🎥</text>
+          </view>
+          <text class="video-badge">我的视频</text>
+          <view class="video-play">▶</view>
+        </view>
       </view>
     </view>
   </view>
 
   <view class="empty-tip" wx:else>
     <text class="empty-emoji">📭</text>
-    <text class="empty-text">暂无登录记录</text>
+    <text class="empty-text">还没有跳舞记录，去跳一支吧！</text>
   </view>
+
+  <view wx:if="{{list.length > 0}}" class="clear-btn" bindtap="onClear">清空历史记录</view>
 </scroll-view>

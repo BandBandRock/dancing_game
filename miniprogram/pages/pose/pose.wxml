@@ -3,13 +3,14 @@
   <!-- 主体：教学视频（从搜索页「去跳舞」带入） -->
   <video
     wx:if="{{danceVideo}}"
+    id="danceVideo"
     class="main-video"
     src="{{danceVideo}}"
-    autoplay="{{true}}"
+    autoplay="{{false}}"
     controls="{{true}}"
     show-center-play-btn="{{true}}"
     object-fit="contain"
-    loop="{{true}}"
+    bindended="onVideoEnded"
   ></video>
   <view wx:else class="main-empty">
     <text class="main-empty-text">未选择教学视频</text>
@@ -25,10 +26,10 @@
     <text class="song-tag-text">{{songName}}</text>
   </view>
 
-  <!-- 得分进度条 -->
-  <view class="score-panel">
+  <!-- 得分进度条（跳舞中显示） -->
+  <view wx:if="{{started}}" class="score-panel">
     <view class="score-head">
-      <text class="score-label">得分</text>
+      <text class="score-label">平均分</text>
       <text class="score-value {{moving ? 'score-up' : 'score-down'}}">{{score}}</text>
     </view>
     <view class="score-bar">
@@ -69,4 +70,16 @@
     <text class="unsupported-title">当前设备暂不支持实时姿态识别</text>
     <text class="unsupported-desc">{{unsupportedReason}}</text>
   </view>
+
+  <!-- 开始跳舞遮罩（未开始时显示） -->
+  <view wx:if="{{!started}}" class="start-mask">
+    <view class="start-card">
+      <text class="start-title">{{songName || '广场舞'}}</text>
+      <text class="start-sub">准备好就开始跳吧</text>
+      <view class="start-btn" hover-class="start-btn-active" bindtap="startDance">开始跳舞</view>
+    </view>
+  </view>
+
+  <!-- 结束跳舞按钮（跳舞中显示） -->
+  <view wx:if="{{started && !ended}}" class="end-btn" hover-class="end-btn-active" bindtap="finishDance">结束跳舞</view>
 </view>

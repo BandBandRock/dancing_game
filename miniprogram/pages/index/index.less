@@ -1,0 +1,340 @@
+/**index.less 广场舞首页**/
+page {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #f5f6fa;
+}
+.scrollarea {
+  flex: 1;
+  overflow-y: hidden;
+}
+
+.home {
+  display: flex;
+  flex-direction: column;
+  padding: 24rpx 24rpx 40rpx;
+  box-sizing: border-box;
+}
+
+/* 搜索栏 */
+.search-bar {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 40rpx;
+  padding: 22rpx 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+.search-icon {
+  font-size: 38rpx;
+  margin-right: 16rpx;
+}
+.search-input {
+  flex: 1;
+  font-size: 36rpx;
+  color: #333;
+}
+.ph {
+  color: #bbb;
+}
+.search-clear {
+  font-size: 32rpx;
+  color: #bbb;
+  padding: 0 12rpx;
+}
+
+/* 小标题（从首页带过来的舞种名称） */
+.sub-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #222;
+  margin: 28rpx 6rpx 4rpx;
+}
+
+/* 歌曲类型筛选 */
+.type-scroll {
+  width: 100%;
+  white-space: nowrap;
+  margin-top: 24rpx;
+}
+.type-chip {
+  display: inline-block;
+  padding: 16rpx 36rpx;
+  margin-right: 16rpx;
+  font-size: 32rpx;
+  color: #666;
+  background: #fff;
+  border-radius: 32rpx;
+}
+.type-chip.active {
+  color: #fff;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  font-weight: 600;
+}
+
+/* 歌曲列表 */
+.song-list {
+  margin-top: 24rpx;
+}
+.song-item {
+  display: flex;
+  align-items: center;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 22rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+.play-btn {
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: #fff;
+  font-size: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 28rpx;
+}
+.song-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.song-name {
+  font-size: 38rpx;
+  color: #222;
+  font-weight: 600;
+}
+.song-sub {
+  font-size: 28rpx;
+  color: #999;
+  margin-top: 10rpx;
+}
+.song-type {
+  font-size: 30rpx;
+  color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.1);
+  padding: 8rpx 20rpx;
+  border-radius: 20rpx;
+}
+.empty {
+  text-align: center;
+  color: #999;
+  font-size: 32rpx;
+  padding: 60rpx 0;
+}
+
+/* 推荐视频（搜索框下方空白区） */
+.rec-section {
+  margin-top: 32rpx;
+}
+.rec-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 8rpx 6rpx 20rpx;
+}
+.rec-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #222;
+}
+.rec-more {
+  font-size: 30rpx;
+  color: #ff7e5f;
+}
+.rec-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+.rec-card {
+  width: 48.5%;
+  margin-bottom: 26rpx;
+}
+.rec-cover {
+  position: relative;
+  width: 100%;
+  height: 440rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+}
+.rec-cover-img {
+  width: 100%;
+  height: 100%;
+}
+.rec-cover-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+}
+.rec-emoji {
+  font-size: 96rpx;
+}
+.rec-badge {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 24rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+.rec-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.rec-dur {
+  position: absolute;
+  right: 12rpx;
+  bottom: 12rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 24rpx;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+.rec-name {
+  display: block;
+  font-size: 30rpx;
+  color: #333;
+  margin-top: 12rpx;
+  line-height: 1.35;
+}
+
+/* 视频播放层 */
+.video-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.video-panel {
+  width: 88%;
+  background: #fff;
+  border-radius: 20rpx;
+  padding: 28rpx;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.video-head {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+.video-title {
+  font-size: 38rpx;
+  font-weight: 600;
+  color: #222;
+}
+.video-tags {
+  margin-top: 12rpx;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+.video-type {
+  font-size: 28rpx;
+  color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.12);
+  padding: 4rpx 18rpx;
+  border-radius: 20rpx;
+}
+.video-badge {
+  font-size: 26rpx;
+  color: #fff;
+  background: #999;
+  padding: 4rpx 18rpx;
+  border-radius: 20rpx;
+}
+.video-tip {
+  margin-top: 16rpx;
+  font-size: 24rpx;
+  color: #999;
+  text-align: center;
+}
+.video-player {
+  width: 100%;
+  height: 420rpx;
+  border-radius: 12rpx;
+  background: #000;
+}
+.video-close {
+  margin-top: 24rpx;
+  width: 100%;
+  text-align: center;
+  padding: 18rpx 0;
+  font-size: 34rpx;
+  color: #fff;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  border-radius: 40rpx;
+}
+
+/* 满屏播放（推荐视频） */
+.video-mask.full {
+  background: #000;
+}
+.video-panel.full {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+  padding: 0;
+  background: #000;
+  justify-content: flex-start;
+}
+.video-head.full {
+  padding: 90rpx 32rpx 16rpx;
+}
+.video-head.full .video-title {
+  color: #fff;
+}
+.video-player.full {
+  flex: 1;
+  width: 100%;
+  height: auto;
+  border-radius: 0;
+}
+.video-close-float {
+  position: absolute;
+  top: 36rpx;
+  right: 30rpx;
+  z-index: 2;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  font-size: 34rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

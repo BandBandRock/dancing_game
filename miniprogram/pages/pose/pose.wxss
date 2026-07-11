@@ -231,3 +231,69 @@
   color: #aaa;
   font-size: 26rpx;
 }
+
+/* 开始跳舞遮罩 */
+.start-mask {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+.start-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24rpx;
+  padding: 60rpx 70rpx;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 28rpx;
+}
+.start-title {
+  color: #fff;
+  font-size: 44rpx;
+  font-weight: 700;
+}
+.start-sub {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 28rpx;
+}
+.start-btn {
+  margin-top: 20rpx;
+  padding: 24rpx 90rpx;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
+  color: #fff;
+  font-size: 38rpx;
+  font-weight: 700;
+  border-radius: 50rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 126, 95, 0.4);
+}
+.start-btn-active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+/* 结束跳舞按钮 */
+.end-btn {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 60rpx);
+  transform: translateX(-50%);
+  padding: 24rpx 100rpx;
+  background: rgba(230, 67, 64, 0.92);
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+  border-radius: 50rpx;
+  z-index: 30;
+  box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
+}
+.end-btn-active {
+  transform: translateX(-50%) scale(0.96);
+  opacity: 0.9;
+}

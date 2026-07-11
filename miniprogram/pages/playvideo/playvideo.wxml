@@ -1,0 +1,18 @@
+<!--pages/playvideo/playvideo.wxml 全屏播放自己跳舞的视频-->
+<view class="root">
+  <video
+    wx:if="{{video}}"
+    class="player-video"
+    src="{{video}}"
+    autoplay="{{true}}"
+    controls="{{true}}"
+    show-center-play-btn="{{true}}"
+    object-fit="contain"
+  ></video>
+  <view wx:else class="player-empty">视频不可用</view>
+
+  <!-- 左上角退出键（Skyline 下普通 view 与 video 同层，z-index 生效可直接点） -->
+  <view class="exit-btn" bindtap="onExit">
+    <text class="exit-icon">✕</text>
+  </view>
+</view>

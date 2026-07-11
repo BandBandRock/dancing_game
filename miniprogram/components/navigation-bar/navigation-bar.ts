@@ -94,12 +94,20 @@ Component({
     },
     back() {
       const data = this.data
-      if (data.delta) {
-        wx.navigateBack({
-          delta: data.delta
-        })
+      // 健壮返回：若当前已是页面栈唯一页（如被 reLaunch 打开），navigateBack 无页可退，
+      // 此时直接回首页，避免手机上卡死在历史页。
+      const pages = getCurrentPages()
+      if (pages.length <= 1) {
+        wx.reLaunch({ url: '/pages/home/home' })
+      } else {
+        wx.navigateBack({ delta: data.delta })
       }
       this.triggerEvent('back', { delta: data.delta }, {})
-    }
+    },
+    // 直接返回首页（导航栏 home 按钮）
+    home() {
+      wx.reLaunch({ url: '/pages/home/home' })
+      this.triggerEvent('home', {}, {})
+    },
   },
 })

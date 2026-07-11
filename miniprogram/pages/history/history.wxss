@@ -1,4 +1,4 @@
-/**history.wxss**/
+/**history.wxss 我的跳舞历史**/
 page {
   height: 100vh;
   display: flex;
@@ -11,48 +11,95 @@ page {
   padding: 24rpx 32rpx;
 }
 
+/* 顶部返回首页按钮（常驻，真机可见可点） */
+.topbar {
+  padding: 12rpx 32rpx 0;
+  background: #f5f5f5;
+}
+.home-btn {
+  display: inline-block;
+  padding: 14rpx 28rpx;
+  background: #fff;
+  color: #ff7e5f;
+  font-size: 30rpx;
+  font-weight: 600;
+  border-radius: 999rpx;
+  box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.06);
+}
+.home-btn:active {
+  background: #fff1ec;
+}
+
 /* 统计卡片 */
 .stats-card {
+  position: sticky;
+  top: 0;
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: space-around;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  justify-content: center;
+  background: linear-gradient(135deg, #ff7e5f, #feb47b);
   border-radius: 24rpx;
   padding: 40rpx 20rpx;
   margin-bottom: 32rpx;
-  box-shadow: 0 6rpx 24rpx rgba(102, 126, 234, 0.3);
+  box-shadow: 0 6rpx 24rpx rgba(255, 126, 95, 0.3);
 }
-
+/* 删除（垃圾桶）图标：选择模式下高亮 */
+.trash {
+  position: absolute;
+  right: 28rpx;
+  top: 50%;
+  margin-top: -36rpx;
+  width: 72rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  font-size: 38rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+.trash.active {
+  transform: scale(1.12);
+  background: rgba(255, 255, 255, 0.5);
+}
 .stat-item {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8rpx;
 }
-
 .stat-num {
   font-size: 52rpx;
   font-weight: 700;
   color: #fff;
 }
-
 .stat-label {
   font-size: 24rpx;
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255, 255, 255, 0.85);
 }
 
-.stat-divider {
-  width: 2rpx;
-  height: 60rpx;
-  background: rgba(255, 255, 255, 0.3);
-}
-
-/* 列表标题 */
+/* 列表标题 / 选择模式操作条 */
 .list-title {
   font-size: 30rpx;
   font-weight: 600;
   color: #333;
   margin-bottom: 16rpx;
+}
+.select-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+.select-cancel,
+.select-one {
+  font-size: 30rpx;
+  color: #ff7e5f;
+}
+.select-info {
+  font-size: 28rpx;
+  color: #666;
 }
 
 /* 记录列表 */
@@ -60,67 +107,124 @@ page {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
-  padding-bottom: 48rpx;
+  padding-bottom: 24rpx;
 }
-
-.record-item {
+.record-card {
+  position: relative;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  align-items: flex-start;
   background: #fff;
   border-radius: 20rpx;
   padding: 28rpx 24rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
 }
-
-.record-left {
+/* 选择模式下每项左侧的小圆圈 */
+.pick-circle {
+  flex: none;
+  width: 40rpx;
+  height: 40rpx;
+  margin: 6rpx 16rpx 0 0;
+  border-radius: 50%;
+  border: 3rpx solid #ccc;
+  background: #fff;
+  box-sizing: border-box;
+}
+.pick-circle.on {
+  border-color: #ff7e5f;
+  background: #ff7e5f;
+}
+.record-main {
+  flex: 1;
+  min-width: 0;
+}
+.record-top {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  justify-content: space-between;
 }
-
-.record-icon {
-  font-size: 44rpx;
+.record-song {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: #222;
 }
-
-.record-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6rpx;
-}
-
-.record-date {
-  font-size: 28rpx;
+.record-score {
+  font-size: 32rpx;
   font-weight: 600;
-  color: #333;
+  color: #ff7e5f;
+  background: rgba(255, 126, 95, 0.12);
+  padding: 6rpx 18rpx;
+  border-radius: 20rpx;
 }
-
 .record-time {
-  font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-top: 12rpx;
+}
+.record-date,
+.record-clock {
+  font-size: 28rpx;
   color: #999;
 }
-
-.record-center {
-  padding: 0 12rpx;
+.record-dot {
+  color: #ccc;
 }
 
-.record-duration {
-  font-size: 26rpx;
-  color: #667eea;
-  font-weight: 600;
-  white-space: nowrap;
+/* 自己跳舞的视频封面 */
+.record-video {
+  position: relative;
+  width: 100%;
+  height: 360rpx;
+  margin-top: 20rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea, #764ba2);
 }
-
-.record-right {
-  flex: 1;
-  text-align: right;
+.video-ph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.record-thanks {
+.video-emoji {
+  font-size: 90rpx;
+}
+.video-badge {
+  position: absolute;
+  top: 12rpx;
+  left: 12rpx;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
   font-size: 24rpx;
-  color: #f0a500;
-  font-weight: 500;
-  white-space: nowrap;
+  padding: 4rpx 16rpx;
+  border-radius: 20rpx;
+}
+.video-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 36rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 清空按钮 */
+.clear-btn {
+  margin: 24rpx 0 60rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #999;
+  padding: 22rpx 0;
+  background: #fff;
+  border-radius: 20rpx;
 }
 
 /* 空态 */
@@ -131,12 +235,12 @@ page {
   padding-top: 200rpx;
   gap: 16rpx;
 }
-
 .empty-emoji {
   font-size: 80rpx;
 }
-
 .empty-text {
   font-size: 30rpx;
   color: #999;
 }
+
+/* 满屏播放层（已改为独立页面 pages/playvideo，这里不再保留浮层样式） */

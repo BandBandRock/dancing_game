@@ -2,6 +2,8 @@
 // VisionKit 人体姿态实时骨骼渲染
 // VKSession / VKBodyAnchor 等类型见 typings/vk.d.ts
 
+import { addHistory } from '../../utils/danceHistory'
+
 // ---- 骨架连线（基于 VisionKit 23 点中稳定的 COCO-17 核心部分）----
 // 索引含义：0 鼻 1 左眼 2 右眼 3 左耳 4 右耳 5 左肩 6 右肩
 // 7 左肘 8 右肘 9 左腕 10 右腕 11 左髋 12 右髋
@@ -34,6 +36,11 @@ Component({
     fps: 0,
     bodyCount: 0,     // 当前检测到的人体数量（调试用）
 
+    // ---- 跳舞会话状态 ----
+    started: false,   // 是否已点「开始跳舞」
+    ended: false,     // 是否已结束（防止重复保存）
+    startTime: 0,     // 开始跳舞的时间戳（毫秒，用于记录开始时间）
+
     // ---- 算分 ----
     score: 60,        // 当前得分（0~100），初始 60，进度条展示
     moving: false,    // 最近一次判定是否「在动」（手臂-躯干角度>阈值）
@@ -55,11 +62,16 @@ Component({
     _frameW: 0,          // 最近一帧原始宽
     _frameH: 0,          // 最近一帧原始高
     _scoreTimer: 0,      // 每 2 秒判定一次的计时器
+
+    // ---- 录制自己的跳舞视频 ----
+    _wantRecord: false,  // 是否已请求录制（点「开始跳舞」后置 true）
+    _recording: false,   // 录制是否进行中
+    _cameraCtx: null as any, // 摄像头录制上下文（CameraContext）
   },
 
   lifetimes: {
     attached() {
-      this.checkAndInit()
+      // 不再自动启动，等用户点「开始跳舞」
     },
     detached() {
       this.cleanup()
@@ -77,10 +89,153 @@ Component({
       }
     },
 
+    // 点击「开始跳舞」：启动摄像头+识别+视频+算分，并记录开始时间
+    startDance() {
+      if (this.data.started) return
+      this.setData({
+        started: true,
+        ended: false,
+        startTime: Date.now(),
+        score: 60,
+        moving: false,
+      })
+      // 标记希望录制，等摄像头就绪后真正开始录制
+      this.data._wantRecord = true
+      this.checkAndInit()
+      // 播放教学视频（不循环，播完触发结束）
+      if (this.data.danceVideo) {
+        const vc = wx.createVideoContext('danceVideo', this)
+        setTimeout(() => vc.play(), 50)
+      }
+    },
+
+    // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录
+    finishDance() {
+      if (!this.data.started || this.data.ended) return
+      this.setData({ ended: true, started: false })
+
+      // 停止识别与算分
+      this.stopScoring()
+      const vc = wx.createVideoContext('danceVideo', this)
+      try { vc.stop() } catch (e) {}
+
+      // 先停录制拿到自己跳舞的视频，再持久化、存入历史
+      this.stopRecording()
+        .then((tempPath) => this.persistVideo(tempPath))
+        .then((videoPath) => {
+          // 录制成功用自己跳舞的视频；失败则兜底用教学视频，保证历史不空
+          const finalVideo = videoPath || this.data.danceVideo
+          const start = new Date(this.data.startTime)
+          const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
+          const dateStr =
+            start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate())
+          addHistory({
+            song: this.data.songName || '未命名舞蹈',
+            score: this.data.score,
+            date: dateStr,
+            hour: start.getHours(),
+            minute: start.getMinutes(),
+            video: finalVideo,
+          })
+
+          wx.showToast({
+            title: videoPath ? '已保存你的跳舞视频' : '已保存到历史',
+            icon: 'success',
+          })
+          // 跳转到历史页查看记录
+          setTimeout(() => {
+            wx.reLaunch({ url: '../history/history' })
+          }, 800)
+        })
+    },
+
+    // 开始录制摄像头（自己跳舞的视频）。摄像头就绪后调用。
+    startRecording() {
+      if (this.data._recording || !this.data.cameraReady) return
+      if (!this.data._wantRecord) return
+      const ctx = this.ensureCameraContext()
+      // 等摄像头组件真正渲染就绪再开始录制，避免时序问题
+      setTimeout(() => {
+        if (this.data._recording) return
+        ctx.startRecord({
+          timeoutCallback: () => {
+            // 达到录制时长上限，自动结束本次跳舞
+            if (this.data.started && !this.data.ended) this.finishDance()
+          },
+          success: () => {
+            this.data._recording = true
+          },
+          fail: (e: any) => {
+            console.error('[record] start failed', e)
+            this.data._recording = false
+            this.data._cameraCtx = null
+          },
+        })
+      }, 300)
+    },
+
+    // 停止录制，返回临时视频路径（未录制则返回空串）
+    stopRecording(): Promise<string> {
+      return new Promise((resolve) => {
+        const ctx = this.data._cameraCtx
+        if (!this.data._recording || !ctx) {
+          resolve('')
+          return
+        }
+        this.data._recording = false
+        ctx.stopRecord({
+          success: (res: any) => {
+            resolve(res.tempVideoPath || '')
+          },
+          fail: (e: any) => {
+            console.error('[record] stop failed', e)
+            resolve('')
+          },
+        })
+      })
+    },
+
+    // 把临时视频转存到本地持久目录，避免被微信临时文件清理机制删除
+    persistVideo(tempPath: string): Promise<string> {
+      return new Promise((resolve) => {
+        if (!tempPath) {
+          resolve('')
+          return
+        }
+        const fs = wx.getFileSystemManager()
+        fs.saveFile({
+          tempFilePath: tempPath,
+          success: (res: any) => resolve(res.savedFilePath || tempPath),
+          fail: (e: any) => {
+            console.error('[saveFile] fail', e)
+            resolve(tempPath) // 持久化失败则用临时路径兜底
+          },
+        })
+      })
+    },
+
+    // 视频自然播放完毕（未手动结束）→ 结束并保存
+    onVideoEnded() {
+      if (this.data.started && !this.data.ended) {
+        this.finishDance()
+      }
+    },
+
+    // 停止算分计时器
+    stopScoring() {
+      if (this.data._scoreTimer) {
+        clearInterval(this.data._scoreTimer)
+        this.data._scoreTimer = 0
+      }
+    },
+
     // 1) 能力检测 + 初始化
     checkAndInit() {
       if (!(wx as any).createVKSession) {
-        this.fallback('当前微信版本过低，请升级微信后重试')
+        // 没有姿态识别能力：仍可用摄像头录制自己的跳舞视频，只是不打分
+        this.setData({ cameraReady: true, statusText: '开始录制（无姿态识别）' }, () => {
+          this.startRecording()
+        })
         return
       }
 
@@ -98,11 +253,13 @@ Component({
           }
           this.setData({ cameraReady: true }, () => {
             this.initCanvas().then(() => this.initVK())
+            this.startRecording()
           })
         },
         fail: () => {
           this.setData({ cameraReady: true }, () => {
             this.initCanvas().then(() => this.initVK())
+            this.startRecording()
           })
         },
       })
@@ -179,8 +336,16 @@ Component({
     },
 
     // 3.5) 抽取 camera 帧，手动送入 detectBody
+    //    与录制共用同一个 CameraContext（避免多实例冲突）
+    ensureCameraContext(): any {
+      if (!this.data._cameraCtx) {
+        this.data._cameraCtx = (wx as any).createCameraContext()
+      }
+      return this.data._cameraCtx
+    },
+
     startFrameFeed() {
-      const ctx = (wx as any).createCameraContext()
+      const ctx = this.ensureCameraContext()
       const listener = ctx.onCameraFrame((frame: any) => {
         // 流控：上一帧还没检测完就跳过，避免堆积
         if (this.data._detecting) return
@@ -423,6 +588,10 @@ Component({
         try { listener.stop() } catch (e) {}
         this.data._frameListener = null
       }
+      // 释放录制状态（直接丢弃未结束的录制）
+      this.data._recording = false
+      this.data._cameraCtx = null
+      this.data._wantRecord = false
       const session = this.data._session
       if (session) {
         try { session.stop() } catch (e) {}
