@@ -108,6 +108,13 @@ Component({
     subTitle: '',
     isScoped: false,
     videoFull: false, // true=满屏播放（推荐视频），false=居中卡片（歌曲）
+    rate: 1,
+    shaking: {
+      rate05: false,
+      rate1: false,
+    },
+    fireworkActive: false,
+    showPraise: false,
     // 推荐视频：竖屏广场舞。cover 留空时用渐变占位封面；
     // 正式上线把 cover 换成云服务器封面图地址、video 换成对应视频文件名即可。
     recommendVideos: [
@@ -129,6 +136,20 @@ Component({
           subTitle: type,
           isScoped: true,
         })
+
+        // 从搜索结果页跳过来，直接打开视频
+        if (options.video) {
+          const video = decodeURIComponent(options.video)
+          const song = options.song ? decodeURIComponent(options.song) : ''
+          this.setData({
+            currentVideo: video,
+            currentSong: song,
+            currentType: type,
+            videoFull: false,
+            showVideo: true,
+            rate: 1,
+          })
+        }
       }
       this.applyFilter()
     },
@@ -163,7 +184,11 @@ Component({
         currentType: song.type,
         videoFull: false,
         showVideo: true,
+        rate: 1,
+        fireworkActive: false,
+        showPraise: false,
       })
+      this.data._fireReady = false
     },
 
     // 点击推荐视频 → 满屏播放（竖屏）
@@ -177,7 +202,11 @@ Component({
         currentType: v.type,
         videoFull: true,
         showVideo: true,
+        rate: 1,
+        fireworkActive: false,
+        showPraise: false,
       })
+      this.data._fireReady = false
     },
 
     // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
@@ -190,7 +219,152 @@ Component({
 
     // 关闭视频
     onCloseVideo() {
-      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false })
+      this.stopFirework()
+      this.setData({ showVideo: false, currentVideo: '', currentSong: '', currentType: '', videoFull: false, rate: 1, fireworkActive: false, showPraise: false })
+    },
+
+    // 视频播放结束 → 礼花 + 你真棒
+    onVideoEnded() {
+      this.setData({ fireworkActive: true, showPraise: true })
+      setTimeout(() => this.prepFireCanvas(), 100)
+    },
+
+    // ===== 礼花粒子系统 =====
+    _fireTimer: 0 as any,
+    _fireCtx: null as any,
+    _fireCanvas: null as any,
+    _fireCW: 0,
+    _fireCH: 0,
+    _fireParticles: [] as any[],
+    _fireReady: false,
+
+    prepFireCanvas() {
+      if (this.data._fireReady) { this.fireBoom(); return }
+      const query = this.createSelectorQuery()
+      query.select('#fireworkCanvas')
+        .fields({ node: true, size: true })
+        .exec((res: any) => {
+          if (!res || !res[0] || !res[0].node) return
+          const canvas = res[0].node
+          const ctx = canvas.getContext('2d')
+          const dpr = wx.getSystemInfoSync().pixelRatio || 1
+          canvas.width = res[0].width * dpr
+          canvas.height = res[0].height * dpr
+          ctx.scale(dpr, dpr)
+          this.data._fireCanvas = canvas
+          this.data._fireCtx = ctx
+          this.data._fireCW = res[0].width
+          this.data._fireCH = res[0].height
+          this.data._fireReady = true
+          this.fireBoom()
+        })
+    },
+
+    fireBoom() {
+      const ctx = this.data._fireCtx
+      if (!ctx) return
+      this.data._fireParticles = []
+      const cx = this.data._fireCW / 2
+      const cy = this.data._fireCH / 2
+      const colors = ['#FF3B30','#FF9500','#FFCC00','#34C759','#007AFF','#AF52DE','#FF2D55','#5AC8FA','#FFD60A','#FF6B35']
+
+      for (let i = 0; i < 60; i++) {
+        const angle = (Math.PI * 2 * i) / 60 + (Math.random() - 0.5) * 0.3
+        const speed = 5 + Math.random() * 9
+        this.data._fireParticles.push({
+          x: cx, y: cy,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed - 3,
+          r: 3 + Math.random() * 5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          life: 70 + Math.random() * 40,
+          gravity: 0.1,
+          shrink: 0.96,
+        })
+      }
+
+      let round = 0
+      clearInterval(this.data._fireTimer)
+      this.data._fireTimer = setInterval(() => {
+        round++
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.random() * Math.PI * 2
+          const speed = 2 + Math.random() * 4
+          this.data._fireParticles.push({
+            x: cx + (Math.random() - 0.5) * 50,
+            y: cy + (Math.random() - 0.5) * 30,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1,
+            r: 2 + Math.random() * 2,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            life: 35 + Math.random() * 20,
+            gravity: 0.07,
+            shrink: 0.94,
+          })
+        }
+        if (round >= 30) { this.stopFirework() }
+      }, 80) as unknown as number
+
+      this.fireAnimate()
+    },
+
+    fireAnimate() {
+      const ctx = this.data._fireCtx
+      const canvas = this.data._fireCanvas
+      if (!ctx || !canvas) return
+      const w = this.data._fireCW
+      const h = this.data._fireCH
+      const particles = this.data._fireParticles
+
+      ctx.clearRect(0, 0, w, h)
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i]
+        p.x += p.vx
+        p.vy += p.gravity
+        p.y += p.vy
+        p.r *= p.shrink
+        p.life--
+        if (p.life <= 0 || p.r < 0.2) { particles.splice(i, 1); continue }
+        ctx.globalAlpha = Math.min(1, p.life / 15)
+        ctx.fillStyle = p.color
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill()
+        ctx.globalAlpha = Math.min(0.5, p.life / 40)
+        ctx.beginPath(); ctx.arc(p.x - p.vx * 1.5, p.y - p.vy * 1.5, p.r * 0.5, 0, Math.PI * 2); ctx.fill()
+      }
+
+      if (particles.length > 0 || this.data._fireTimer) {
+        canvas.requestAnimationFrame(() => this.fireAnimate())
+      }
+    },
+
+    stopFirework() {
+      if (this.data._fireTimer) { clearInterval(this.data._fireTimer); this.data._fireTimer = 0 }
+      this.data._fireParticles = []
+      const ctx = this.data._fireCtx
+      if (ctx) { ctx.clearRect(0, 0, this.data._fireCW, this.data._fireCH) }
+      this.setData({ fireworkActive: false, showPraise: false })
+    },
+
+    // 切换播放倍速
+    setRate(e: any) {
+      const rate = Number(e.currentTarget.dataset.rate)
+      if (rate === this.data.rate) return
+
+      // 按钮颤动 key
+      const keyMap: Record<number, string> = { 0.5: 'rate05', 1: 'rate1' }
+      const key = keyMap[rate]
+      if (key) {
+        this.setData({ [`shaking.${key}`]: true })
+        setTimeout(() => {
+          this.setData({ [`shaking.${key}`]: false })
+        }, 350)
+      }
+
+      this.setData({ rate }, () => {
+        const videoCtx = wx.createVideoContext('danceVideo', this)
+        console.log('[setRate] rate:', rate, 'videoCtx:', !!videoCtx)
+        videoCtx.playbackRate(rate)
+      })
     },
 
     // 关键词 + 类型 过滤

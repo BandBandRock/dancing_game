@@ -96,12 +96,41 @@
     </view>
     <video
       class="video-player {{videoFull ? 'full' : ''}}"
+      id="danceVideo"
       src="{{currentVideo}}"
       autoplay="{{true}}"
       controls="{{true}}"
       show-center-play-btn="{{true}}"
       object-fit="contain"
+      playback-rate="{{rate}}"
+      bindended="onVideoEnded"
     ></video>
+
+    <!-- 视频结束礼花 + 你真棒 -->
+    <canvas
+      type="2d"
+      id="fireworkCanvas"
+      class="firework-canvas {{videoFull ? 'full' : ''}}"
+      hidden="{{!fireworkActive}}"
+    ></canvas>
+    <view wx:if="{{showPraise}}" class="praise-text {{videoFull ? 'full' : ''}}">你真棒</view>
+
+    <!-- 倍速选择 -->
+    <view class="speed-row">
+      <view
+        class="speed-btn {{rate === 0.5 ? 'speed-on' : ''}} {{shaking.rate05 ? 'speed-shake' : ''}}"
+        hover-class="speed-hover"
+        bindtap="setRate"
+        data-rate="0.5"
+      >0.5x</view>
+      <view
+        class="speed-btn {{rate === 1 ? 'speed-on' : ''}} {{shaking.rate1 ? 'speed-shake' : ''}}"
+        hover-class="speed-hover"
+        bindtap="setRate"
+        data-rate="1"
+      >1x</view>
+    </view>
+
     <view wx:if="{{!videoFull}}" class="video-tip">替换为您自己的舞曲视频即可精准匹配</view>
     <view wx:if="{{!videoFull}}" class="video-go-dance" bindtap="onGoDance">🕺 去跳舞</view>
     <view wx:if="{{!videoFull}}" class="video-close" bindtap="onCloseVideo">关闭</view>
