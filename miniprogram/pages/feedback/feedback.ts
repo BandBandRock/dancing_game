@@ -187,6 +187,7 @@ Page({
     return (
       `pages/shared/shared?song=${encodeURIComponent(this.data.song)}` +
       `&score=${this.data.score}` +
+      `&type=${encodeURIComponent(this.data.type || '')}` +
       `&teach=${encodeURIComponent(this.data.teach || '')}` +
       `&video=${encodeURIComponent(this.data.video || '')}` +
       `&rate=${this.data.rate}` +

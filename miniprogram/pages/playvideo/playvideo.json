@@ -1,5 +1,6 @@
 {
   "navigationBarTitleText": "视频回放",
   "navigationStyle": "custom",
-  "pageOrientation": "landscape"
+  "pageOrientation": "landscape",
+  "renderer": "webview"
 }
