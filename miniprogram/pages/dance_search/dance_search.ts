@@ -24,22 +24,6 @@ function resolveVideo(video: string): string {
   return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
 }
 
-// 推荐视频卡片的封面渐变（无封面图时用渐变占位，更显“视频感”）
-const GRADIENTS = [
-  'linear-gradient(135deg,#ff9a9e,#fecfef)',
-  'linear-gradient(135deg,#a18cd1,#fbc2eb)',
-  'linear-gradient(135deg,#ffecd2,#fcb69f)',
-  'linear-gradient(135deg,#84fab0,#8fd3f4)',
-  'linear-gradient(135deg,#fccb90,#d57eeb)',
-  'linear-gradient(135deg,#f093fb,#f5576c)',
-  'linear-gradient(135deg,#4facfe,#00f2fe)',
-  'linear-gradient(135deg,#43e97b,#38f9d7)',
-  'linear-gradient(135deg,#fa709a,#fee140)',
-  'linear-gradient(135deg,#30cfd0,#330867)',
-  'linear-gradient(135deg,#ff6a00,#ee0979)',
-  'linear-gradient(135deg,#642b73,#c6426e)',
-]
-
 Component({
   data: {
     keyword: '',
@@ -117,7 +101,6 @@ Component({
       { name: '倍儿爽', artist: '大张伟', type: '鬼步舞', duration: '03:25', video: 'gb-12.mp4' },
     ] as Song[],
     filtered: [] as Song[],
-    recommendList: [] as any[], // 默认落地页的推荐广场舞视频网格
     showVideo: false,
     currentVideo: '',
     currentSong: '',
@@ -142,6 +125,7 @@ Component({
           activeType: type,
           subTitle: type,
           isScoped: true,
+          currentType: type,
         })
 
         // 从搜索结果页跳过来，直接打开视频
@@ -159,12 +143,6 @@ Component({
         }
       }
       this.applyFilter()
-
-      // 默认落地页（未搜索、未带舞种）：填充广场舞视频网格
-      const rec = this.data.songs
-        .filter((s) => s.type === '广场舞')
-        .map((s, i) => ({ ...s, cover: GRADIENTS[i % GRADIENTS.length] }))
-      this.setData({ recommendList: rec })
     },
     onSearchInput(e: any) {
       this.setData({ keyword: e.detail.value })
@@ -202,29 +180,14 @@ Component({
       this.data._fireReady = false
     },
 
-    // 点击推荐视频卡片 → 居中卡片播放（可预览，也可“去跳舞”）
-    onRecTap(e: any) {
-      const name = e.currentTarget.dataset.name as string
-      const song = this.data.recommendList.find((s) => s.name === name)
-      if (!song) return
-      this.setData({
-        currentVideo: resolveVideo(song.video),
-        currentSong: song.name,
-        currentType: song.type,
-        videoFull: false,
-        showVideo: true,
-        rate: 1,
-        fireworkActive: false,
-        showPraise: false,
-      })
-      this.data._fireReady = false
-    },
-
     // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
     onGoDance() {
       if (!this.data.currentVideo) return
       wx.navigateTo({
-        url: `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}&song=${encodeURIComponent(this.data.currentSong)}`,
+        url:
+          `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}` +
+          `&song=${encodeURIComponent(this.data.currentSong)}` +
+          `&type=${encodeURIComponent(this.data.currentType)}`,
       })
     },
 

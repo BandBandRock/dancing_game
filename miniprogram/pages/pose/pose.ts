@@ -27,6 +27,7 @@ Component({
     cameraReady: false,
     danceVideo: '',   // 主体教学视频地址（从搜索页「去跳舞」带入）
     songName: '',     // 教学视频名称
+    songType: '',     // 舞种（广场舞/交谊舞…，用于退出后跳回该舞种列表）
     supported: true,
     unsupportedReason: '',
     statusText: '正在初始化…',
@@ -88,6 +89,7 @@ Component({
         this.setData({
           danceVideo: decodeURIComponent(options.video),
           songName: options.song ? decodeURIComponent(options.song) : '',
+          songType: options.type ? decodeURIComponent(options.type) : '',
           rate: 1,
         })
       }
@@ -130,6 +132,7 @@ Component({
         start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate())
       const pending: any = {
         song: this.data.songName || '未命名舞蹈',
+        type: this.data.songType || '',
         score: this.data.score,
         date: dateStr,
         hour: start.getHours(),
