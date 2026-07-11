@@ -1,0 +1,25 @@
+<!--skelview.wxml 骨骼回放 demo-->
+<view class="wrap">
+  <video
+    wx:if="{{playUrl}}"
+    class="player"
+    src="{{playUrl}}"
+    autoplay="{{true}}"
+    controls="{{true}}"
+    object-fit="fill"
+    bindtimeupdate="onTimeUpdate"
+  ></video>
+
+  <!-- 骨骼叠加层：盖在视频之上，不拦截触摸，保证下方视频控件可用 -->
+  <canvas type="2d" id="skel" class="overlay"></canvas>
+
+  <!-- 顶部栏 -->
+  <view class="topbar">
+    <view class="back" bindtap="onExit">✕</view>
+    <text class="title">{{song || '骨骼回放'}}</text>
+    <view class="mirror-btn {{mirror ? 'on' : ''}}" bindtap="toggleMirror">镜像</view>
+  </view>
+
+  <!-- 调试 / 错误提示 -->
+  <view wx:if="{{errorMessage}}" class="err">{{errorMessage}}</view>
+</view>

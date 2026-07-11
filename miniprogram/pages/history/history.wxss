@@ -215,6 +215,20 @@ page {
   align-items: center;
   justify-content: center;
 }
+/* 调试齿轮：视频右上角，点击弹出 fileId / 骨骼信息 */
+.debug-gear {
+  position: absolute;
+  right: 20rpx;
+  top: 20rpx;
+  width: 56rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  text-align: center;
+  font-size: 32rpx;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+}
 
 /* 清空按钮 */
 .clear-btn {
@@ -225,6 +239,72 @@ page {
   padding: 22rpx 0;
   background: #fff;
   border-radius: 20rpx;
+}
+
+/* 长按 5s 调试信息浮层 */
+.debug-mask {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+}
+.debug-box {
+  width: 84%;
+  max-width: 640rpx;
+  background: #1e1e1e;
+  color: #e6e6e6;
+  border-radius: 20rpx;
+  padding: 36rpx 32rpx 28rpx;
+  box-shadow: 0 12rpx 60rpx rgba(0, 0, 0, 0.5);
+}
+.debug-title {
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #4fd1c5;
+  margin-bottom: 22rpx;
+}
+.debug-row {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 18rpx;
+}
+.debug-k {
+  font-size: 24rpx;
+  color: #9aa0a6;
+  margin-bottom: 6rpx;
+}
+.debug-v {
+  font-size: 28rpx;
+  line-height: 1.5;
+  word-break: break-all;
+  color: #fff;
+}
+.debug-v.mono {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
+.debug-close {
+  margin-top: 12rpx;
+  text-align: center;
+  font-size: 30rpx;
+  color: #4fd1c5;
+  padding: 16rpx 0;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.12);
+}
+.debug-demo {
+  margin-top: 18rpx;
+  text-align: center;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: #06281f;
+  background: #5DCAA5;
+  padding: 18rpx 0;
+  border-radius: 12rpx;
 }
 
 /* 空态 */

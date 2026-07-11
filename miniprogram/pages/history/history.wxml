@@ -44,12 +44,18 @@
           <text class="record-clock">{{item.timeText}}</text>
         </view>
         <!-- 自己跳舞的视频封面：点击满屏播放 -->
-        <view class="record-video" bindtap="onPlay" data-id="{{item.id}}">
+        <view
+          class="record-video"
+          bindtap="onPlay"
+          data-id="{{item.id}}"
+        >
           <view class="video-ph">
             <text class="video-emoji">🎥</text>
           </view>
           <text class="video-badge">我的视频</text>
           <view class="video-play">▶</view>
+          <!-- 调试齿轮：点击弹出 fileId / 骨骼信息 -->
+          <view class="debug-gear" catchtap="onDebugTap" data-id="{{item.id}}">⚙</view>
         </view>
       </view>
     </view>
@@ -61,4 +67,29 @@
   </view>
 
   <view wx:if="{{list.length > 0}}" class="clear-btn" bindtap="onClear">清空历史记录</view>
+
+  <!-- 长按 5s 调试信息浮层 -->
+  <view wx:if="{{debugShow}}" class="debug-mask" bindtap="onDebugClose">
+    <view class="debug-box" catchtap="noop">
+      <view class="debug-title">调试信息（长按 5s）</view>
+      <view class="debug-row">
+        <text class="debug-k">歌曲</text>
+        <text class="debug-v">{{debugSong}}</text>
+      </view>
+      <view class="debug-row">
+        <text class="debug-k">视频 fileId</text>
+        <text class="debug-v mono" user-select="{{true}}" selectable="{{true}}">{{debugVideo}}</text>
+      </view>
+      <view class="debug-row">
+        <text class="debug-k">骨骼JSON fileId</text>
+        <text class="debug-v mono" user-select="{{true}}" selectable="{{true}}">{{debugSkeleton}}</text>
+      </view>
+      <view class="debug-row">
+        <text class="debug-k">记录 id</text>
+        <text class="debug-v mono">{{debugId}}</text>
+      </view>
+      <view class="debug-demo" bindtap="onOpenSkeleton">▶ 呈现骨骼视频</view>
+      <view class="debug-close" bindtap="onDebugClose">关闭</view>
+    </view>
+  </view>
 </scroll-view>

@@ -1,0 +1,75 @@
+/* skelview.wxss 骨骼回放 demo */
+.wrap {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+.player {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+}
+/* 骨骼叠加层：铺满、不拦截触摸 */
+.overlay {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.topbar {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 80rpx 32rpx 20rpx;
+  z-index: 10;
+}
+.back {
+  width: 64rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  text-align: center;
+  font-size: 40rpx;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 50%;
+}
+.title {
+  flex: 1;
+  text-align: center;
+  color: #fff;
+  font-size: 30rpx;
+  text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.6);
+}
+.mirror-btn {
+  padding: 10rpx 24rpx;
+  font-size: 26rpx;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 30rpx;
+}
+.mirror-btn.on {
+  background: #5DCAA5;
+  color: #06281f;
+}
+.err {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 80%;
+  text-align: center;
+  color: #ffd43b;
+  font-size: 28rpx;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 24rpx 32rpx;
+  border-radius: 16rpx;
+}

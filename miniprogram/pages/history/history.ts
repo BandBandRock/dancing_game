@@ -27,6 +27,12 @@ Component({
     selecting: false, // 是否处于“选择模式”（每项出现小圆圈）
     selectedMap: {} as Record<string, boolean>, // 已选中的记录 id
     selectedCount: 0, // 已选中数量
+    // 长按 5s 调试信息
+    debugShow: false, // 是否显示调试浮层
+    debugSong: '', // 歌曲名
+    debugVideo: '', // 视频 fileID
+    debugSkeleton: '', // 骨骼 JSON fileID
+    debugId: '', // 记录 id
   },
 
   lifetimes: {
@@ -64,9 +70,53 @@ Component({
       this.setData({ list, totalCount })
     },
 
+    // 点击齿轮图标 → 弹出调试信息（显示 fileId / 骨骼 JSON fileId）
+    onDebugTap(e: any) {
+      if (this.data.selecting) return
+      const id = e.currentTarget.dataset.id as string
+      const rec = this.data.list.find((r) => r.id === id)
+      if (!rec) return
+      this.setData({
+        debugShow: true,
+        debugSong: rec.song || '（未知）',
+        debugId: rec.id || '',
+        debugVideo: rec.video || '（空）',
+        debugSkeleton: rec.skeleton || '（无）',
+      })
+    },
+
+    // 关闭调试浮层
+    onDebugClose() {
+      this.setData({ debugShow: false })
+    },
+
+    // 调试浮层内部点击，阻止冒泡关闭
+    noop() {},
+
+    // 调试浮层里「呈现骨骼视频」：跳转骨骼回放 demo（原始视频叠加骨骼动画）
+    onOpenSkeleton() {
+      const id = this.data.debugId
+      const rec = this.data.list.find((r) => r.id === id)
+      if (!rec) return
+      if (!rec.skeleton) {
+        wx.showToast({ title: '该记录无骨骼数据', icon: 'none' })
+        return
+      }
+      wx.navigateTo({
+        url:
+          '/pages/skelview/skelview?video=' +
+          encodeURIComponent(rec.video) +
+          '&skeleton=' +
+          encodeURIComponent(rec.skeleton) +
+          '&song=' +
+          encodeURIComponent(rec.song),
+      })
+    },
+
     // 点击视频封面 → 跳转独立全屏播放页（选择模式下不触发，避免误操作）
     onPlay(e: any) {
       if (this.data.selecting) return
+      if (this.data.debugShow) return
       const id = e.currentTarget.dataset.id as string
       const rec = this.data.list.find((r) => r.id === id)
       if (!rec) return
