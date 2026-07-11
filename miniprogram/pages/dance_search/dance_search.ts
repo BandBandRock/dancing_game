@@ -6,6 +6,7 @@
 // ============================================================
 import { resolveCloudFile } from '../../utils/cloudMedia'
 import { fetchVideos, VideoMeta } from '../../utils/videoRepo'
+import { loadFavorites, addFavorite, removeFavorite } from '../../utils/favoriteRepo'
 
 type Song = VideoMeta
 
@@ -36,8 +37,8 @@ Component({
     },
     fireworkActive: false,
     showPraise: false,
-    // 收藏状态
-    favoritedKeys: {} as Record<string, boolean>,
+    // 收藏状态：key = "name|type" → 云端记录 _id（空串表示未收藏）
+    favoritedKeys: {} as Record<string, string>,
   },
   methods: {
     async onLoad(options: any) {
@@ -91,59 +92,51 @@ Component({
       }
     },
 
-    // 加载收藏状态
-    loadFavorites() {
-      const fav = wx.getStorageSync('favorite_songs') || {}
-      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+    // 加载收藏状态（从云数据库）
+    async loadFavorites() {
+      try {
+        const { keys } = await loadFavorites()
+        this.setData({ favoritedKeys: keys })
+      } catch (e) {
+        console.error('[dance_search] loadFavorites 失败', e)
+      }
     },
 
-    // 切换收藏
-    toggleFavorite(e: any) {
+    // 切换收藏（写云数据库）
+    async toggleFavorite(e: any) {
       const key = e.currentTarget.dataset.key as string
       const index = e.currentTarget.dataset.index
 
-      // 从 songs 里找到对应歌曲信息
       const filtered = this.data.filtered
       if (index === undefined || index < 0 || index >= filtered.length) return
       const song = filtered[index]
 
       const fav = { ...this.data.favoritedKeys }
       if (fav[key]) {
-        delete fav[key]
-        // 也从收藏列表中移除
-        const list = wx.getStorageSync('favorite_songs_list') || []
-        const arr = Array.isArray(list) ? list : []
-        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
-        wx.setStorageSync('favorite_songs_list', newList)
-        wx.showToast({ title: '取消收藏', icon: 'none' })
+        // 取消收藏
+        const recordId = fav[key]
+        const ok = await removeFavorite(recordId)
+        if (ok) {
+          delete fav[key]
+          wx.showToast({ title: '取消收藏', icon: 'none' })
+        } else {
+          wx.showToast({ title: '操作失败', icon: 'none' })
+        }
       } else {
-        fav[key] = true
-        // 保存完整的歌曲信息到收藏列表
-        this.saveFavoriteSong(song)
-        wx.showToast({ title: '已收藏', icon: 'success' })
+        // 添加收藏
+        const id = await addFavorite({
+          name: song.name,
+          type: song.type,
+          fileID: song.video,
+        })
+        if (id) {
+          fav[key] = id
+          wx.showToast({ title: '已收藏', icon: 'success' })
+        } else {
+          wx.showToast({ title: '操作失败', icon: 'none' })
+        }
       }
       this.setData({ favoritedKeys: fav })
-      wx.setStorageSync('favorite_songs', fav)
-    },
-
-    // 保存收藏的完整歌曲信息
-    saveFavoriteSong(song: any) {
-      const list = wx.getStorageSync('favorite_songs_list') || []
-      const arr = Array.isArray(list) ? list : []
-      // 不重复添加
-      const key = song.name + '|' + song.type
-      const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
-      if (!exists) {
-        arr.push({
-          name: song.name,
-          artist: song.artist,
-          type: song.type,
-          duration: song.duration,
-          video: song.video,
-          favoritedAt: Date.now(),
-        })
-        wx.setStorageSync('favorite_songs_list', arr)
-      }
     },
 
     // 搜索输入

@@ -5,6 +5,7 @@
 // ============================================================
 import { searchVideos, addVideo, VideoMeta } from '../../utils/videoRepo'
 import { uploadVideo as cosUpload } from '../../utils/cosUpload'
+import { loadFavorites, addFavorite, removeFavorite } from '../../utils/favoriteRepo'
 
 type Song = VideoMeta
 
@@ -13,7 +14,7 @@ Component({
     keyword: '',
     filtered: [] as Song[],
     loading: false,
-    favoritedKeys: {} as Record<string, boolean>,
+    favoritedKeys: {} as Record<string, string>,
     shaking: {
       search: false,
       ballroom: false,
@@ -25,8 +26,8 @@ Component({
   },
 
   lifetimes: {
-    attached() {
-      this.loadFavorites()
+    async attached() {
+      await this.loadFavoritesFromCloud()
     },
   },
 
@@ -64,14 +65,18 @@ Component({
       }
     },
 
-    // 加载收藏状态
-    loadFavorites() {
-      const fav = wx.getStorageSync('favorite_songs') || {}
-      this.setData({ favoritedKeys: typeof fav === 'object' && !Array.isArray(fav) ? fav : {} })
+    // 加载收藏状态（从云数据库）
+    async loadFavoritesFromCloud() {
+      try {
+        const { keys } = await loadFavorites()
+        this.setData({ favoritedKeys: keys })
+      } catch (e) {
+        console.error('[home] loadFavorites 失败', e)
+      }
     },
 
-    // 切换收藏
-    toggleFavorite(e: any) {
+    // 切换收藏（写云数据库）
+    async toggleFavorite(e: any) {
       const key = e.currentTarget.dataset.key as string
       const index = e.currentTarget.dataset.index
       const filtered = this.data.filtered
@@ -79,32 +84,28 @@ Component({
       const song = filtered[index]
 
       const fav = { ...this.data.favoritedKeys }
-      const list = wx.getStorageSync('favorite_songs_list') || []
-      const arr = Array.isArray(list) ? list : []
-
       if (fav[key]) {
-        delete fav[key]
-        const newList = arr.filter((item: any) => (item.name + '|' + item.type) !== key)
-        wx.setStorageSync('favorite_songs_list', newList)
-        wx.showToast({ title: '取消收藏', icon: 'none' })
-      } else {
-        fav[key] = true
-        const exists = arr.some((item: any) => (item.name + '|' + item.type) === key)
-        if (!exists) {
-          arr.push({
-            name: song.name,
-            artist: song.artist,
-            type: song.type,
-            duration: song.duration,
-            video: song.video,
-            favoritedAt: Date.now(),
-          })
-          wx.setStorageSync('favorite_songs_list', arr)
+        const ok = await removeFavorite(fav[key])
+        if (ok) {
+          delete fav[key]
+          wx.showToast({ title: '取消收藏', icon: 'none' })
+        } else {
+          wx.showToast({ title: '操作失败', icon: 'none' })
         }
-        wx.showToast({ title: '已收藏', icon: 'success' })
+      } else {
+        const id = await addFavorite({
+          name: song.name,
+          type: song.type,
+          fileID: song.video,
+        })
+        if (id) {
+          fav[key] = id
+          wx.showToast({ title: '已收藏', icon: 'success' })
+        } else {
+          wx.showToast({ title: '操作失败', icon: 'none' })
+        }
       }
       this.setData({ favoritedKeys: fav })
-      wx.setStorageSync('favorite_songs', fav)
     },
 
     // 点击搜索结果 → 到 dance_search 打开对应视频
