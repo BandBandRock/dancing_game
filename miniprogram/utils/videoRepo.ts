@@ -7,7 +7,7 @@
 // 集合 `videos` 字段约定：
 //   - name       string  展示名称（歌名 / 用户输入名）
 //   - artist     string  作者/来源，可选（无则显示占位）
-//   - type       string  舞种：广场舞 / 交谊舞 / 民族舞 / 健身操 / 鬼步舞
+//   - type       string  舞种：广场舞 / 交谊舞 / 民族舞 / 养生操 / 鬼步舞
 //   - duration   string  时长文本，如 "03:32"，可选
 //   - fileID     string  云存储文件 ID（cloud://...）
 //   - createTime number  创建时间戳（用于排序）

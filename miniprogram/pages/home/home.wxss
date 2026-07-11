@@ -130,7 +130,7 @@ page {
   font-size: 110rpx;
 }
 
-/* 交际舞 - 琥珀金 */
+/* 交谊舞 - 琥珀金 */
 .ballroom-btn {
   background: linear-gradient(135deg, #ffe082, #ff8f00);
 }

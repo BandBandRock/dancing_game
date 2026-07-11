@@ -18,7 +18,7 @@ Component({
   data: {
     keyword: '',
     activeType: '全部',
-    types: ['全部', '广场舞', '交谊舞', '民族舞', '健身操', '鬼步舞'],
+    types: ['全部', '广场舞', '交谊舞', '民族舞', '养生操', '鬼步舞'],
     songs: [] as Song[],
     filtered: [] as Song[],
     loading: false,

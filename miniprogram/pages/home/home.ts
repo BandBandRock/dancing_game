@@ -145,7 +145,7 @@ Component({
     },
 
     goHealth() {
-      this.goDanceSearch('health', '健身操')
+      this.goDanceSearch('health', '养生操')
     },
 
     // 舞种按钮 → 跳转搜索落地页（带舞种筛选）
@@ -175,7 +175,7 @@ Component({
 
     // 上传舞蹈
     onUploadTap() {
-      const types = ['广场舞', '交谊舞', '民族舞', '健身操', '鬼步舞']
+      const types = ['广场舞', '交谊舞', '民族舞', '养生操', '鬼步舞']
       console.log('[upload] onUploadTap 点击上传，弹出舞种选择')
       wx.showActionSheet({
         itemList: types,

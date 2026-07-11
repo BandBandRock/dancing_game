@@ -51,11 +51,11 @@
       </button>
     </view>
 
-    <!-- 第一行：交际舞 + 广场舞 -->
+    <!-- 第一行：交谊舞 + 广场舞 -->
     <view class="category-row">
       <button class="big-cat-btn ballroom-btn {{shaking.ballroom ? 'pressed shaking' : ''}}" bindtap="goBallroom">
         <text class="big-cat-emoji">💫</text>
-        <text>交际舞</text>
+        <text>交谊舞</text>
       </button>
       <button class="big-cat-btn square-btn {{shaking.square ? 'pressed shaking' : ''}}" bindtap="goSquare">
         <text class="big-cat-emoji">🎀</text>
@@ -71,7 +71,7 @@
       </button>
       <button class="big-cat-btn health-btn {{shaking.health ? 'pressed shaking' : ''}}" bindtap="goHealth">
         <text class="big-cat-emoji">🍃</text>
-        <text>健身操</text>
+        <text>养生操</text>
       </button>
     </view>
   </block>
