@@ -74,6 +74,11 @@
       </button>
     </view>
   </block>
+
+  <!-- 测试按钮：选视频上传到云存储并播放 -->
+  <button class="test-upload-btn" bindtap="testUpload" disabled="{{testing}}">
+    {{testing ? '上传中...' : '测试上传并播放视频'}}
+  </button>
 </view>
 
 <!-- Debug 入口：姿态识别 -->

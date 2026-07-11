@@ -9,7 +9,8 @@
     "pages/search/search",
     "pages/dance_search/dance_search",
     "pages/pose/pose",
-    "pages/playvideo/playvideo"
+    "pages/playvideo/playvideo",
+    "pages/upload/upload"
   ],
   "window": {
     "navigationBarTextStyle": "black",

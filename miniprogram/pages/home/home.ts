@@ -1,4 +1,6 @@
 // home.ts
+import { uploadVideo } from '../../utils/cosUpload'
+
 interface Song {
   name: string
   artist: string
@@ -89,6 +91,7 @@ Component({
   data: {
     keyword: '',
     filtered: [] as Song[],
+    testing: false, // 测试上传中
     shaking: {
       search: false,
       ballroom: false,
@@ -100,6 +103,58 @@ Component({
   },
 
   methods: {
+    // 测试按钮：选用户自己的视频 → 上传到云存储 uploads/test_{随机}.mp4 → 播放
+    async testUpload() {
+      if (this.data.testing) return
+      this.setData({ testing: true })
+
+      try {
+        // 1. 选用户自己的视频（相册/拍摄）
+        const tempFilePath = await new Promise<string>((resolve, reject) => {
+          wx.chooseMedia({
+            count: 1,
+            mediaType: ['video'],
+            sourceType: ['album', 'camera'],
+            maxDuration: 60,
+            success: (res) => resolve(res.tempFiles[0].tempFilePath),
+            fail: reject,
+          })
+        })
+
+        // 2. 上传到云存储：uploads/test_{随机}.mp4（创建者=当前用户，自带读权限）
+        wx.showLoading({ title: '上传中 0%', mask: true })
+        const rand = Math.random().toString(36).slice(2, 8)
+        const result = await uploadVideo({
+          filePath: tempFilePath,
+          fileName: `test_${rand}.mp4`,
+          onProgress: (p) => {
+            const percent = Math.round(p * 100)
+            wx.showLoading({ title: `上传中 ${percent}%`, mask: true })
+          },
+        })
+
+        wx.hideLoading()
+        this.setData({ testing: false })
+        console.log('上传成功 fileID:', result.fileID, '临时地址:', result.url)
+
+        // 3. 用返回的临时地址直接播放，验证上传链路
+        if (result.url) {
+          wx.previewMedia({ sources: [{ url: result.url, type: 'video' }] })
+        } else {
+          wx.showModal({
+            title: '上传成功',
+            content: result.fileID,
+            showCancel: false,
+          })
+        }
+      } catch (err) {
+        wx.hideLoading()
+        this.setData({ testing: false })
+        console.error('测试上传失败', err)
+        wx.showToast({ title: '上传失败，看控制台', icon: 'none' })
+      }
+    },
+
     onSearchInput(e: any) {
       const keyword = e.detail.value
       this.setData({ keyword })
