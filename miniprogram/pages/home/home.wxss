@@ -11,20 +11,6 @@ page {
   padding: 24rpx 32rpx;
 }
 
-/* 测试上传按钮 */
-.test-upload-btn {
-  margin-top: 32rpx;
-  background: #ff9800;
-  color: #fff;
-  border-radius: 16rpx;
-  font-size: 30rpx;
-}
-
-.test-upload-btn[disabled] {
-  background: #ccc;
-  color: #fff;
-}
-
 /* 搜索条 */
 .search-bar {
   display: flex;

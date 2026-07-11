@@ -74,14 +74,6 @@
       </button>
     </view>
   </block>
-
-  <!-- 测试按钮：选视频上传到云存储并播放 -->
-  <button class="test-upload-btn" bindtap="testUpload" disabled="{{testing}}">
-    {{testing ? '上传中 ' + uploadPercent + '%' : '测试上传并播放视频'}}
-  </button>
-  <view wx:if="{{testing}}" class="upload-progress">
-    正在上传到云存储… {{uploadPercent}}%
-  </view>
 </view>
 
 <!-- Debug 入口：姿态识别 -->

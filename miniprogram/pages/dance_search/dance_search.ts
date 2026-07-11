@@ -4,24 +4,27 @@ interface Song {
   artist: string
   type: string
   duration: string
-  video: string // 视频文件名（不含路径），完整地址 = VIDEO_BASE + video
+  video: string // 视频文件名 / cloud:// fileID，统一由 toCloudFileID + resolveCloudFile 解析播放
 }
 
 // ============================================================
-// 视频基础地址（云服务器 / CDN）
-// - 正式上线：把下面这行换成你的云存储 / CDN 地址，
-//   例如 'https://your-bucket.cos.ap-guangzhou.myqcloud.com/video/'
-//   并把该域名加入小程序后台「request 合法域名」白名单。
-// - 开发预览：默认指向本地 dev-server（npm run dev:video），
-//   视频不再打进小程序主包，彻底不占包体积。
+// 视频统一走云存储
 // - 每首歌的 video 字段是它专属的视频文件名（1:1 对应，歌名即绑定），
-//   你把真实广场舞视频按这些文件名传到云上即可正确匹配。
+//   对应云存储里的同名对象（如 gcd-02.mp4）。
+//   "爱如毒酒" 等已直接写成完整 cloud:// fileID，原样使用。
+// - video 组件 / wx.request 不能直接吃 cloud://，所有播放前都通过
+//   resolveCloudFile 解析成临时 https 地址（约 2 小时有效）。
 // ============================================================
-const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
+import { toCloudFileID, resolveCloudFile } from '../../utils/cloudMedia'
 
-// 解析视频完整地址：video 已是绝对地址（http/https）则直接用，否则拼 VIDEO_BASE
+// 解析视频完整地址：统一成 cloud:// fileID
 function resolveVideo(video: string): string {
-  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+  return toCloudFileID(video)
+}
+
+// 把 fileID 解析成可播放的临时 https 地址
+function playVideo(fileID: string) {
+  return resolveCloudFile(fileID)
 }
 
 Component({
@@ -31,7 +34,7 @@ Component({
     types: ['全部', '广场舞', '交谊舞', '民族舞', '健身操', '鬼步舞'],
     songs: [
       // —— 广场舞（12 首）——
-      { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'https://dancing-1253975745.cos.ap-guangzhou.myqcloud.com/v1_coco17.mp4' },
+      { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'cloud://cloud1-d9gm4mnma453a20a7.636c-cloud1-d9gm4mnma453a20a7-1253975745/v1.mp4' },
       { name: '小苹果', artist: '筷子兄弟', type: '广场舞', duration: '03:22', video: 'gcd-02.mp4' },
       { name: '荷塘月色', artist: '凤凰传奇', type: '广场舞', duration: '03:53', video: 'gcd-03.mp4' },
       { name: '酒醉的蝴蝶', artist: '崔伟立', type: '广场舞', duration: '03:45', video: 'gcd-04.mp4' },
@@ -141,13 +144,16 @@ Component({
         if (options.video) {
           const video = decodeURIComponent(options.video)
           const song = options.song ? decodeURIComponent(options.song) : ''
-          this.setData({
-            currentVideo: video,
-            currentSong: song,
-            currentType: type,
-            videoFull: false,
-            showVideo: true,
-            rate: 1,
+          const fileID = resolveVideo(video)
+          playVideo(fileID).then((url) => {
+            this.setData({
+              currentVideo: url,
+              currentSong: song,
+              currentType: type,
+              videoFull: false,
+              showVideo: true,
+              rate: 1,
+            })
           })
         }
       }
@@ -178,17 +184,20 @@ Component({
       const name = e.currentTarget.dataset.name as string
       const song = this.data.songs.find((s) => s.name === name)
       if (!song) return
-      this.setData({
-        currentVideo: resolveVideo(song.video),
-        currentSong: song.name,
-        currentType: song.type,
-        videoFull: false,
-        showVideo: true,
-        rate: 1,
-        fireworkActive: false,
-        showPraise: false,
+      const fileID = resolveVideo(song.video)
+      playVideo(fileID).then((url) => {
+        this.setData({
+          currentVideo: url,
+          currentSong: song.name,
+          currentType: song.type,
+          videoFull: false,
+          showVideo: true,
+          rate: 1,
+          fireworkActive: false,
+          showPraise: false,
+        })
+        this.data._fireReady = false
       })
-      this.data._fireReady = false
     },
 
     // 点击推荐视频 → 满屏播放（竖屏）
@@ -196,17 +205,20 @@ Component({
       const title = e.currentTarget.dataset.title as string
       const v = this.data.recommendVideos.find((r) => r.title === title)
       if (!v) return
-      this.setData({
-        currentVideo: resolveVideo(v.video),
-        currentSong: v.title,
-        currentType: v.type,
-        videoFull: true,
-        showVideo: true,
-        rate: 1,
-        fireworkActive: false,
-        showPraise: false,
+      const fileID = resolveVideo(v.video)
+      playVideo(fileID).then((url) => {
+        this.setData({
+          currentVideo: url,
+          currentSong: v.title,
+          currentType: v.type,
+          videoFull: true,
+          showVideo: true,
+          rate: 1,
+          fireworkActive: false,
+          showPraise: false,
+        })
+        this.data._fireReady = false
       })
-      this.data._fireReady = false
     },
 
     // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）

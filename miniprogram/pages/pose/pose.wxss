@@ -99,6 +99,76 @@
   border-radius: 20rpx;
 }
 
+/* 对齐阶段：相机小窗变全屏 */
+.cam-float.cam-full {
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  z-index: 5;
+}
+
+/* 对齐阶段覆盖层（在相机之上） */
+.align-overlay {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 12;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.align-tip {
+  margin-top: calc(env(safe-area-inset-top) + 40rpx);
+  padding: 16rpx 36rpx;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 30rpx;
+  text-align: center;
+}
+
+.align-tip.align-tip-ok {
+  background: rgba(52, 199, 89, 0.85);
+}
+
+.align-bar {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  transform: translateX(-50%);
+  width: 60vw;
+  height: 18rpx;
+  border-radius: 10rpx;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+
+.align-fill {
+  height: 100%;
+  border-radius: 10rpx;
+  background: linear-gradient(90deg, #34C759, #30D158);
+  transition: width 0.12s linear;
+}
+
+.align-pct {
+  position: absolute;
+  left: 50%;
+  bottom: calc(env(safe-area-inset-bottom) + 150rpx);
+  transform: translateX(-50%);
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+}
+
 /* 左上角返回按钮 */
 .back-btn {
   position: absolute;
@@ -349,6 +419,39 @@
 }
 .tag-shake {
   animation: tagShake 0.35s ease;
+}
+
+/* 连续多人/缺帧：屏幕边缘红色渐变闪烁告警 */
+.warn-flash {
+  position: fixed;
+  left: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 40;
+  border: 10rpx solid rgba(255, 59, 48, 0.2);
+  animation: warnPulse 1s ease-in-out infinite;
+}
+
+@keyframes warnPulse {
+  0%, 100% { box-shadow: inset 0 0 0rpx rgba(255, 59, 48, 0);     border-color: rgba(255, 59, 48, 0.15); }
+  50%      { box-shadow: inset 0 0 90rpx rgba(255, 59, 48, 0.6);  border-color: rgba(255, 59, 48, 0.85); }
+}
+
+.warn-tip {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 41;
+  padding: 20rpx 40rpx;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 30rpx;
+  border-radius: 16rpx;
+  pointer-events: none;
+  text-align: center;
 }
 
 /* 礼花 canvas 全屏覆盖 */

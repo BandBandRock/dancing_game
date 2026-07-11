@@ -1,4 +1,6 @@
 // pages/playvideo/playvideo.ts 全屏播放自己跳舞的视频
+import { resolveCloudFile } from '../../utils/cloudMedia'
+
 Component({
   data: {
     video: '',
@@ -9,23 +11,13 @@ Component({
       if (options && options.video) {
         const raw = decodeURIComponent(options.video)
         const song = options.song ? decodeURIComponent(options.song) : ''
-        if (raw.indexOf('cloud://') === 0) {
-          // 云端 fileID：需解析成临时 https 地址才能播放
-          wx.cloud.getTempFileURL({
-            fileList: [raw],
-            success: (res: any) => {
-              const item = res.fileList && res.fileList[0]
-              const url = (item && item.tempFileURL) || ''
-              this.setData({ video: url || raw, song })
-            },
-            fail: () => {
-              console.error('[playvideo] 解析云端地址失败', raw)
-              this.setData({ video: '', song })
-            },
-          })
-        } else {
-          this.setData({ video: raw, song })
-        }
+        // 统一策略：cloud:// fileID 解析成临时 https 再播放，普通 URL 原样
+        resolveCloudFile(raw).then((url) => {
+          this.setData({ video: url, song })
+        }).catch((e) => {
+          console.error('[playvideo] 解析云端地址失败', e)
+          this.setData({ video: '', song })
+        })
       }
     },
     // 左上角「✕」退出键：返回历史页

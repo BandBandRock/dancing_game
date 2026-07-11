@@ -3,8 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev:video": "node dev-server/server.js",
-    "build:manifest": "node dev-server/build-manifest.js"
   },
   "keywords": [],
   "author": "",

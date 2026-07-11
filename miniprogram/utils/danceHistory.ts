@@ -18,6 +18,7 @@ export interface DanceRecord {
   hour: number // 开始小时 0-23
   minute: number // 开始分钟 0-59
   video: string // 自己跳舞的视频云端地址（cloud:// fileID）
+  skeleton?: string // 用户跳舞骨骼序列云端地址（cloud:// fileID），与视频解耦，可单独回放
 }
 
 const KEY = 'danceHistory'

@@ -2,10 +2,10 @@
 <view class="page">
   <!-- 主体：教学视频（从搜索页「去跳舞」带入） -->
   <video
-    wx:if="{{danceVideo}}"
+    wx:if="{{playUrl}}"
     id="danceVideo"
     class="main-video"
-    src="{{danceVideo}}"
+    src="{{playUrl}}"
     autoplay="{{false}}"
     controls="{{true}}"
     show-center-play-btn="{{true}}"
@@ -13,7 +13,12 @@
     loop="{{false}}"
     playback-rate="{{rate}}"
     bindended="onVideoEnded"
+    bindtimeupdate="onTimeUpdate"
   ></video>
+
+  <!-- 连续多人/缺帧红色告警：屏幕边缘红色渐变闪烁 -->
+  <view wx:if="{{warn}}" class="warn-flash"></view>
+  <view wx:if="{{warn}}" class="warn-tip">请站到画面中央，确保只有你一个人</view>
 
   <!-- 礼花 canvas 层 -->
   <canvas
@@ -25,7 +30,7 @@
   <view wx:if="{{showPraise}}" class="praise-text">你真棒</view>
 
   <!-- 倍速选择栏 -->
-  <view wx:if="{{danceVideo}}" class="speed-panel">
+  <view wx:if="{{danceVideo && !aligning}}" class="speed-panel">
     <view
       class="speed-tag {{rate === 0.5 ? 'speed-tag-on' : ''}} {{shaking.s05 ? 'tag-shake' : ''}}"
       hover-class="tag-hover"
@@ -65,8 +70,8 @@
     <text class="score-hint">{{moving ? '动起来啦，加分！' : '跳起来才能加分哦'}}</text>
   </view>
 
-  <!-- 右下角摄像头小窗 + 骨骼识别 -->
-  <view class="cam-float">
+  <!-- 右下角摄像头小窗 + 骨骼识别（对齐阶段全屏） -->
+  <view class="cam-float {{aligning ? 'cam-full' : ''}}">
     <camera
       wx:if="{{cameraReady}}"
       class="camera"
@@ -98,8 +103,19 @@
     <text class="unsupported-desc">{{unsupportedReason}}</text>
   </view>
 
-  <!-- 开始跳舞遮罩（未开始时显示） -->
-  <view wx:if="{{!started}}" class="start-mask">
+  <!-- 对齐阶段覆盖层：提示 + 3 秒进度条 -->
+  <view wx:if="{{aligning}}" class="align-overlay">
+    <view class="align-tip {{inBox ? 'align-tip-ok' : ''}}">
+      {{alignHint}}
+    </view>
+    <view class="align-bar">
+      <view class="align-fill" style="width: {{alignProgress}}%"></view>
+    </view>
+    <view class="align-pct">{{alignProgress}}%</view>
+  </view>
+
+  <!-- 开始跳舞遮罩（未开始且未对齐时显示，降级兜底） -->
+  <view wx:if="{{!started && !aligning}}" class="start-mask">
     <view class="start-card">
       <text class="start-title">{{songName || '广场舞'}}</text>
       <text class="start-sub">准备好就开始跳吧</text>

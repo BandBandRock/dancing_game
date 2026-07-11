@@ -4,6 +4,22 @@
 
 import { addHistory } from '../../utils/danceHistory'
 import { uploadVideo } from '../../utils/cosUpload'
+import { resolveCloudFile } from '../../utils/cloudMedia'
+import { IAppOption, AlignConfig } from '../../app'
+
+const app = getApp<IAppOption>()
+
+// 对齐阶段配置：优先取 globalData.align（真机可不重编译调整），缺省用兜底值
+const DEFAULT_ALIGN: AlignConfig = {
+  hold: 3000,        // 需站定时长(ms)
+  boxMargin: 0.25,   // 躯干目标框边距（占屏比例）→ 框=0.5屏居中
+  minTorso: 0.15,    // 躯干最小占屏高（站太远下限）
+  maxTorso: 0.42,    // 躯干最大占屏高（站太近上限）
+}
+function alignCfg(): AlignConfig {
+  const g = app && app.globalData && app.globalData.align
+  return g ? { ...DEFAULT_ALIGN, ...g } : DEFAULT_ALIGN
+}
 
 // ---- 骨架连线（基于 VisionKit 23 点中稳定的 COCO-17 核心部分）----
 // 索引含义：0 鼻 1 左眼 2 右眼 3 左耳 4 右耳 5 左肩 6 右肩
@@ -25,10 +41,70 @@ const LINE_COLOR = '#FFD43B'
 const BOX_COLOR = '#FF3B30'   // 官方同款人体检测红框
 const SCORE_THRESHOLD = 0.3
 
+// ===== 可调参数（调试打分效果用，方便微调）=====
+const TOL = 0.6               // 规范空间容差：关节距离 > TOL 个「肩距」则该关节相似度归零
+const SAMPLE_INTERVAL = 200   // 打分采样间隔(ms)：每 200ms 比对一次参考帧
+const FLIP_REF = true         // 示范视频是否镜像：自拍预览被系统镜像，默认翻转参考以对齐左右
+const EMA_ALPHA = 0.3         // 分数平滑：瞬时分权重 0.3，历史分权重 0.7
+const SKIP_WARN_FRAMES = 15   // 连续跳过(多人/缺帧)达 15 次(≈3s) → 触发红色告警
+
+// 对齐阶段参数已迁移至 globalData.align（见 app.ts），由 alignCfg() 读取
+
+// 参与打分的关节（COCO-17 索引），以四肢为主、脸(0~4)忽略
+const SCORED_JOINTS = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+// 各关节权重：手臂(肘/腕)动作最明显给高权重
+const JOINT_WEIGHT: Record<number, number> = {
+  7: 1.5, 8: 1.5, 9: 1.5, 10: 1.5,   // 左/右 肘、腕
+  13: 1.2, 14: 1.2, 15: 1.2, 16: 1.2, // 左/右 膝、踝
+}
+
+interface KP { x: number; y: number; c: number }
+type Canon = ({ x: number; y: number } | null)[]
+
+// 把 COCO-17 关键点归一化到「双髋中点为原点、双肩距为尺度」的规范空间（y 向下，与两边一致）
+// 这样无论参考是像素坐标、用户是 0~1，还是两人离镜头远近不同，都能直接比较。
+function canonicalize(kps: KP[]): Canon {
+  const out: Canon = new Array(17).fill(null)
+  if (!kps || kps.length < 17) return out
+  const h11 = kps[11], h12 = kps[12], s5 = kps[5], s6 = kps[6]
+  if (!h11 || !h12 || !s5 || !s6) return out
+  const cx = (h11.x + h12.x) / 2
+  const cy = (h11.y + h12.y) / 2
+  const scale = Math.hypot(s5.x - s6.x, s5.y - s6.y) || 1
+  for (let i = 0; i < 17; i++) {
+    const k = kps[i]
+    if (!k || k.c < SCORE_THRESHOLD) { out[i] = null; continue }
+    out[i] = { x: (k.x - cx) / scale, y: (k.y - cy) / scale }
+  }
+  return out
+}
+
+// 参考与用户规范骨架的逐关节相似度 → 0~1
+function frameSimilarity(ref: Canon, usr: Canon): number {
+  let sum = 0, wsum = 0
+  for (const i of SCORED_JOINTS) {
+    const r = ref[i], u = usr[i]
+    if (!r || !u) continue
+    const d = Math.hypot(r.x - u.x, r.y - u.y)
+    const sim = Math.max(0, 1 - d / TOL)
+    const w = JOINT_WEIGHT[i] || 1
+    sum += w * sim
+    wsum += w
+  }
+  return wsum ? sum / wsum : 0
+}
+
+// 由教学视频地址推导示范骨骼 JSON 地址（约定：<名>_coco17.json）
+//   v1_coco17.mp4 → v1_coco17.json ；gcd-02.mp4 → gcd-02_coco17.json
+function skeletonUrl(videoUrl: string): string {
+  return videoUrl.replace(/(_coco17)?\.mp4$/i, '_coco17.json')
+}
+
 Component({
   data: {
     cameraReady: false,
-    danceVideo: '',   // 主体教学视频地址（从搜索页「去跳舞」带入）
+    danceVideo: '',   // 主体教学视频 fileID/地址（从搜索页「去跳舞」带入，原始值）
+    playUrl: '',      // 实际给 <video> 播放的地址（cloud:// 会先解析成临时 https）
     songName: '',     // 教学视频名称
     supported: true,
     unsupportedReason: '',
@@ -44,8 +120,16 @@ Component({
 
     // ---- 算分 ----
     score: 60,        // 当前得分（0~100），初始 60，进度条展示
-    moving: false,    // 最近一次判定是否「在动」（手臂-躯干角度>阈值）
+    moving: false,    // 最近一次判定是否「在动」（相似度>0.5）
     rate: 1,          // 视频播放倍速
+    refReady: false,  // 示范骨骼是否已下载并解析就绪
+    warn: false,      // 是否处于「连续多人/缺帧」红色告警
+
+    // ---- 对齐阶段（游戏开始前）----
+    aligning: true,       // 是否处于「对齐」阶段（全屏摄像头 + 红框，站定后自动开始）
+    alignProgress: 0,     // 对齐进度 0~100
+    inBox: false,         // 当前单人是否整体落在红框内（用于 UI 反馈）
+    alignHint: '把身体中部对准红框',  // 对齐提示文案（居中/太远/太近）
     shaking: {         // 倍速按钮颤动状态
       s05: false, s1: false,
     },
@@ -67,7 +151,18 @@ Component({
     _frameListener: null as any, // onCameraFrame 监听器
     _frameW: 0,          // 最近一帧原始宽
     _frameH: 0,          // 最近一帧原始高
-    _scoreTimer: 0,      // 每 2 秒判定一次的计时器
+    _scoreTimer: 0,      // 打分采样计时器
+    _refT: [] as number[],          // 示范骨骼时间轴（秒）
+    _refCanon: [] as Canon[],       // 示范骨骼每帧的规范骨架（预计算）
+    _userSkel: [] as { t: number; kp: number[][] }[], // 用户跳舞骨骼序列（{t, kp:[[x,y,c]×17]}），结束时上传云端
+    _videoTime: 0,      // 当前教学视频播放位置(秒)，来自 timeupdate
+    _skipCount: 0,      // 连续跳过的采样次数（多人/缺帧）
+    _alignTimer: 0,     // 对齐检测计时器
+    _alignAccum: 0,     // 已累计在框内时间(ms)
+    _alignLast: 0,      // 上一次对齐计时时间戳
+    _alignTooFar: false,   // 站太远（躯干过小）
+    _alignTooNear: false,  // 站太近（躯干过大）
+    _alignHold: 3000,      // 当前对齐所需站定时长(ms)，来自 alignCfg()
 
     // ---- 录制自己的跳舞视频 ----
     _wantRecord: false,  // 是否已请求录制（点「开始跳舞」后置 true）
@@ -94,26 +189,70 @@ Component({
           rate: 1,
         })
       }
+      // 教学视频若是 cloud:// fileID，先解析成临时可播放地址再交给 <video>
+      if (this.data.danceVideo) {
+        resolveCloudFile(this.data.danceVideo).then((url) => {
+          if (url) this.setData({ playUrl: url })
+        }).catch((e) => {
+          console.error('[pose] 教学视频解析失败', e)
+        })
+      }
+      // 进入即开始对齐：全屏摄像头 + 红框，站定 3 秒自动开始
+      this.enterAlign()
     },
 
-    // 点击「开始跳舞」：启动摄像头+识别+视频+算分，并记录开始时间
-    startDance() {
-      if (this.data.started) return
+    // 进入「对齐」阶段：全屏摄像头、画红框，等待用户站进框内
+    enterAlign() {
       this.setData({
+        aligning: true,
+        alignProgress: 0,
+        inBox: false,
+        started: false,
+        ended: false,
+        statusText: '请站到红框内',
+      })
+      this.data._wantRecord = false
+      this.data._alignAccum = 0
+      this.data._alignLast = 0
+      this.checkAndInit()   // 初始化摄像头 + 识别（对齐阶段只检测、不评分）
+    },
+
+    // 真正开始游戏（对齐完成后自动调用，或降级时手动点击兜底）
+    beginGame() {
+      this.setData({
+        aligning: false,
         started: true,
         ended: false,
         startTime: Date.now(),
         score: 60,
         moving: false,
+        refReady: false,
+        warn: false,
+        statusText: '识别中',
       })
-      // 标记希望录制，等摄像头就绪后真正开始录制
+      // 重置内部打分状态
+      this.data._videoTime = 0
+      this.data._skipCount = 0
+      this.data._refT = []
+      this.data._refCanon = []
+      this.data._userSkel = []
+      // 下载并解析示范骨骼
+      this.loadReference()
+      // 标记希望录制，开始录制自己的跳舞视频
       this.data._wantRecord = true
-      this.checkAndInit()
+      this.startRecording()
+      this.startScoring()
       // 播放教学视频（不循环，播完触发结束）
       if (this.data.danceVideo) {
         const vc = wx.createVideoContext('danceVideo', this)
         setTimeout(() => vc.play(), 50)
       }
+    },
+
+    // 点击「开始跳舞」：手动开始（无姿态识别降级时的兜底入口）
+    startDance() {
+      if (this.data.started || this.data.aligning) return
+      this.beginGame()
     },
 
     // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录（视频上传云端）
@@ -153,6 +292,28 @@ Component({
         wx.hideLoading()
       }
 
+      // 上传用户跳舞骨骼序列 JSON（与视频解耦，单独可回放/复盘）
+      let skeletonFileID = ''
+      try {
+        if (this.data._userSkel.length) {
+          const fs = wx.getFileSystemManager()
+          const jsonPath = `${wx.env.USER_DATA_PATH}/dance_${Date.now()}_skel.json`
+          fs.writeFileSync(jsonPath, JSON.stringify(this.data._userSkel))
+          wx.showLoading({ title: '保存骨骼…', mask: true })
+          const skelRes = await uploadVideo({
+            filePath: jsonPath,
+            fileName: `dance_${Date.now()}_skeleton.json`,
+            timeoutMs: 120000, // 骨骼 JSON 较小，2 分钟足够
+          })
+          skeletonFileID = skelRes.fileID
+          console.log('[pose] 用户骨骼已上传云端:', skeletonFileID, '共', this.data._userSkel.length, '帧')
+          wx.hideLoading()
+        }
+      } catch (e) {
+        console.error('[pose] 骨骼上传失败（不影响视频）', e)
+        wx.hideLoading()
+      }
+
       // 写入历史记录（video 现在是云端 fileID）
       const start = new Date(this.data.startTime)
       const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
@@ -165,6 +326,7 @@ Component({
         hour: start.getHours(),
         minute: start.getMinutes(),
         video: finalVideo,
+        skeleton: skeletonFileID || undefined,
       })
 
       wx.showToast({
@@ -260,8 +422,8 @@ Component({
     // 1) 能力检测 + 初始化
     checkAndInit() {
       if (!(wx as any).createVKSession) {
-        // 没有姿态识别能力：仍可用摄像头录制自己的跳舞视频，只是不打分
-        this.setData({ cameraReady: true, statusText: '开始录制（无姿态识别）' }, () => {
+        // 没有姿态识别能力：跳过对齐，直接显示「开始跳舞」兜底入口
+        this.setData({ cameraReady: true, aligning: false, statusText: '开始录制（无姿态识别）' }, () => {
           this.startRecording()
         })
         return
@@ -359,7 +521,9 @@ Component({
         this.setData({ statusText: '识别中，请站到画面中' })
         this.startFrameFeed()   // 开始抽帧送检
         this.startRenderLoop()  // 开始画骨骼
-        this.startScoring()     // 开始每 2 秒算分
+        // 对齐阶段先做「站框检测」，否则直接进入算分
+        if (this.data.aligning) this.startAligning()
+        else this.startScoring()
       })
     },
 
@@ -493,6 +657,22 @@ Component({
           ctx.arc(mapX(pts[i].x), mapY(pts[i].y), 5, 0, Math.PI * 2)
           ctx.fill()
         }
+      }
+
+      // 对齐阶段：画红框（在框内变绿），与 torsoAligned 同一坐标系
+      if (this.data.aligning) {
+        const m = alignCfg().boxMargin
+        const rx = m * w
+        const ry = m * h
+        const rw = (1 - 2 * m) * w
+        const rh = (1 - 2 * m) * h
+        ctx.save()
+        ctx.strokeStyle = this.data.inBox ? '#34C759' : '#FF3B30'
+        ctx.lineWidth = 6
+        ctx.setLineDash([20, 14])
+        ctx.strokeRect(rx, ry, rw, rh)
+        ctx.setLineDash([])
+        ctx.restore()
       }
     },
 
@@ -657,69 +837,237 @@ Component({
       })
     },
 
-    // ---- 算分：每 2 秒判定一次 ----
-    // 规则：画面里有人且「在动」（手臂与躯干夹角 > 60°）→ 加分，否则扣分。
+    // ---- 算分：每 SAMPLE_INTERVAL(ms) 采样一次，与对应时刻的示范骨架比对 ----
     startScoring() {
       if (this.data._scoreTimer) return
       this.data._scoreTimer = setInterval(() => {
-        this.evaluateScore()
-      }, 2000) as unknown as number
+        this.sampleScore()
+      }, SAMPLE_INTERVAL) as unknown as number
     },
 
-    evaluateScore() {
+    // ---- 对齐阶段：每 100ms 检测一次「躯干是否居中」，累计 alignCfg().hold 后自动开始 ----
+    startAligning() {
+      if (this.data._alignTimer) return
+      this.data._alignHold = alignCfg().hold
+      this.data._alignLast = Date.now()
+      this.data._alignTimer = setInterval(() => {
+        this.tickAlign()
+      }, 100) as unknown as number
+    },
+
+    tickAlign() {
+      if (!this.data.aligning) return
+      const now = Date.now()
+      const dt = now - this.data._alignLast
+      this.data._alignLast = now
+
+      const inside = this.torsoAligned()
+      this.data._inBox = inside
+      if (inside) this.data._alignAccum += dt
+      else this.data._alignAccum = 0
+
+      // 根据距离状态给出提示（太近/太远优先，否则提示居中）
+      let hint = '把身体中部对准红框'
+      if (inside) hint = '保持住，马上开始…'
+      else if (this.data._alignTooNear) hint = '离太近了，请后退一点'
+      else if (this.data._alignTooFar) hint = '离太远了，请靠近一点'
+
+      const p = Math.min(100, Math.round((this.data._alignAccum / this.data._alignHold) * 100))
+      if (p !== this.data.alignProgress || inside !== this.data.inBox || hint !== this.data.alignHint) {
+        this.setData({ alignProgress: p, inBox: inside, alignHint: hint })
+      }
+
+      if (p >= 100) {
+        this.stopAligning()
+        this.beginGame()   // 站定达标，自动开始游戏
+      }
+    },
+
+    stopAligning() {
+      if (this.data._alignTimer) {
+        clearInterval(this.data._alignTimer)
+        this.data._alignTimer = 0
+      }
+      this.setData({ aligning: false })
+    },
+
+    // 判断当前是否为「单人且躯干居中」：只需肩/髋中心落在中央框内，且躯干不太小（不站太远）
+    torsoAligned(): boolean {
+      // 每次判定先清距离标志，避免多人/关键点缺失时残留旧提示
+      this.data._alignTooFar = false
+      this.data._alignTooNear = false
       const anchors = this.data._anchors
-      let delta = -5          // 默认扣分（没人 / 站着不动）
-      let moving = false
+      if (!anchors || anchors.length !== 1) return false   // 必须单人
+      const a = anchors[0]
+      const pts = a.points
+      const conf = a.confidence || []
+      if (!pts || pts.length < 13) return false
+      const ok = (i: number) => !!pts[i] && (conf[i] === undefined || conf[i] >= SCORE_THRESHOLD)
+      // 需要双肩(5,6)与双髋(11,12)均可见，才能定位躯干
+      if (!ok(5) || !ok(6) || !ok(11) || !ok(12)) return false
 
-      if (anchors && anchors.length) {
-        let maxAngle = -1
-        for (const a of anchors) {
-          const ang = this.armTorsoAngle(a)
-          if (ang > maxAngle) maxAngle = ang
-        }
-        if (maxAngle >= 60) {
-          delta = 5
-          moving = true
-        }
+      const w = this.data._cw, h = this.data._ch
+      if (!w || !h) return false
+      // 与 draw() 一致的 aspect-fill 坐标校正（含镜像）
+      const fw = this.data._frameW || w
+      const fh = this.data._frameH || h
+      const scale = Math.max(w / fw, h / fh)
+      const dispW = fw * scale
+      const dispH = fh * scale
+      const offX = (w - dispW) / 2
+      const offY = (h - dispH) / 2
+      const mirror = this.data.mirror
+      const mapX = (nx: number) => {
+        const px = offX + nx * dispW
+        return mirror ? (w - px) : px
       }
+      const mapY = (ny: number) => offY + ny * dispH
 
-      let score = this.data.score + delta
-      if (score > 100) score = 100
-      if (score < 0) score = 0
-      this.setData({ score, moving })
+      // 躯干中心 = 肩中点 与 髋中点 的中点（归一化坐标）
+      const sx = (pts[5].x + pts[6].x) / 2, sy = (pts[5].y + pts[6].y) / 2
+      const hx = (pts[11].x + pts[12].x) / 2, hy = (pts[11].y + pts[12].y) / 2
+      const tx = (sx + hx) / 2, ty = (sy + hy) / 2
+      const cx = mapX(tx), cy = mapY(ty)
+
+      // 中央目标框（留 2% 余量）——躯干中心落在此框内即视为对齐
+      const cfg = alignCfg()
+      const pad = 0.02
+      const rx1 = (cfg.boxMargin + pad) * w
+      const ry1 = (cfg.boxMargin + pad) * h
+      const rx2 = (1 - cfg.boxMargin - pad) * w
+      const ry2 = (1 - cfg.boxMargin - pad) * h
+      const centered = cx >= rx1 && cx <= rx2 && cy >= ry1 && cy <= ry2
+
+      // 躯干尺寸（肩-髋在屏幕上的垂直距离）：过小=站太远（视频看不清），过大=站太近（四肢易出框）
+      const torsoPx = Math.abs(mapY(sy) - mapY(hy))
+      const sizeOk = torsoPx >= cfg.minTorso * h && torsoPx <= cfg.maxTorso * h
+      // 记录当前距离状态，供 UI 提示「靠近/后退」
+      this.data._alignTooFar = torsoPx < cfg.minTorso * h
+      this.data._alignTooNear = torsoPx > cfg.maxTorso * h
+
+      return centered && sizeOk
     },
 
-    // 计算某个人体「手臂-躯干」最大夹角（度）。以肩为顶点，
-    // 分别用肩→肘、肩→腕 对 肩→髋 求角，左右四组取最大；无有效点返回 -1。
-    armTorsoAngle(anchor: VKBodyAnchor): number {
-      const pts = anchor.points
-      const conf = anchor.confidence || []
-      if (!pts || !pts.length) return -1
-      const ok = (i: number) =>
-        !!pts[i] && (conf[i] === undefined || conf[i] >= SCORE_THRESHOLD)
+    // 单帧采样：定位参考帧 → 取用户骨骼 → 算相似度 → EMA 平滑成分数
+    sampleScore() {
+      if (!this.data.started || this.data.ended) return
+      if (!this.data.refReady) return     // 示范骨骼未就绪先不评分
 
-      // 以 vertex 为顶点，求 vertex→a 与 vertex→b 两向量的夹角
-      const angle = (vertex: number, a: number, b: number): number => {
-        if (!ok(vertex) || !ok(a) || !ok(b)) return -1
-        const v1x = pts[a].x - pts[vertex].x
-        const v1y = pts[a].y - pts[vertex].y
-        const v2x = pts[b].x - pts[vertex].x
-        const v2y = pts[b].y - pts[vertex].y
-        const m1 = Math.hypot(v1x, v1y)
-        const m2 = Math.hypot(v2x, v2y)
-        if (m1 === 0 || m2 === 0) return -1
-        let cos = (v1x * v2x + v1y * v2y) / (m1 * m2)
-        cos = Math.max(-1, Math.min(1, cos))
-        return (Math.acos(cos) * 180) / Math.PI
+      const ref = this.lookupRef(this.data._videoTime)
+      const usr = this.currentUserKp()
+      const refUsable = !!ref && ref.some((j, i) => j && SCORED_JOINTS.indexOf(i) >= 0)
+
+      // 参考缺帧 或 用户侧非单人（0 人 / 多人）→ 跳过本次，累计跳帧数
+      if (!refUsable || !usr) {
+        this.data._skipCount++
+        if (this.data._skipCount >= SKIP_WARN_FRAMES && !this.data.warn) {
+          this.setData({ warn: true })
+        }
+        return
       }
 
-      // 左臂：肩5 顶点，肘7/腕9 对 髋11；右臂：肩6 顶点，肘8/腕10 对 髋12
-      return Math.max(
-        angle(5, 7, 11),
-        angle(5, 9, 11),
-        angle(6, 8, 12),
-        angle(6, 10, 12),
-      )
+      // 恢复正常：清零跳帧计数并关闭告警
+      this.data._skipCount = 0
+      if (this.data.warn) this.setData({ warn: false })
+
+      const uc = canonicalize(usr)
+      const sim = frameSimilarity(ref, uc)
+      const inst = Math.round(sim * 100)
+      const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
+      this.setData({ score, moving: sim > 0.5 })
+
+      // 累积本帧用户骨骼（与示范骨骼同格式 {t, kp:[[x,y,c]×17]}），t 取教学视频时间便于对齐回放
+      this.data._userSkel.push({
+        t: this.data._videoTime,
+        kp: usr.map((p) => [p.x, p.y, p.c]),
+      })
+    },
+
+    // 下载并解析示范骨骼 JSON（开始跳舞时调用）
+    loadReference() {
+      if (!this.data.danceVideo) return
+      const url = skeletonUrl(this.data.danceVideo)
+      console.log('[pose] 下载示范骨骼:', url)
+
+      // 真正发起请求（拿到可访问的 https 地址后）
+      const fetchJson = (reqUrl: string) => {
+        wx.request({
+          url: reqUrl,
+          dataType: 'json',
+          success: (res: any) => {
+            const frames = res.data
+            if (!Array.isArray(frames)) {
+              console.error('[pose] 示范骨骼格式异常', res)
+              return
+            }
+            const refT: number[] = []
+            const refCanon: Canon[] = []
+            for (const f of frames) {
+              const t = typeof f.t === 'number' ? f.t : (refT.length ? refT[refT.length - 1] + 1 / 30 : 0)
+              refT.push(t)
+              const kp = f.kp
+              if (!kp) { refCanon.push(new Array(17).fill(null)); continue }
+              const kps: KP[] = kp.map((p: any) => ({ x: p[0], y: p[1], c: p[2] !== undefined ? p[2] : 1 }))
+              const canon = canonicalize(kps)
+              if (FLIP_REF) for (const j of canon) if (j) j.x = -j.x
+              refCanon.push(canon)
+            }
+            this.data._refT = refT
+            this.data._refCanon = refCanon
+            this.data.refReady = true
+            console.log('[pose] 示范骨骼就绪，共', refCanon.length, '帧')
+          },
+          fail: (e: any) => {
+            console.error('[pose] 示范骨骼下载失败', e)
+          },
+        })
+      }
+
+      // 统一策略：cloud:// fileID 先解析成临时 https，再 wx.request 下载
+      resolveCloudFile(url).then(fetchJson).catch((e) => {
+        console.error('[pose] 示范骨骼解析/下载失败', e)
+      })
+    },
+
+    // 按播放时间二分查找最近的示范帧（返回该帧规范骨架）
+    lookupRef(t: number): Canon | null {
+      const T = this.data._refT
+      const C = this.data._refCanon
+      if (!T.length) return null
+      let lo = 0, hi = T.length - 1
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        if (T[mid] < t) lo = mid + 1
+        else hi = mid
+      }
+      // lo 为第一个 >= t 的帧，比较 lo 与 lo-1 取时间更近者
+      let idx = lo
+      if (lo > 0 && Math.abs(T[lo - 1] - t) < Math.abs(T[lo] - t)) idx = lo - 1
+      return C[idx] || null
+    },
+
+    // 取当前用户骨骼（COCO-17 前 17 点，归一化 0~1）。非单人返回 null → 视为跳过
+    currentUserKp(): KP[] | null {
+      const anchors = this.data._anchors
+      if (!anchors || anchors.length !== 1) return null   // 0 人或多人 → 跳过
+      const a = anchors[0]
+      const pts = a.points
+      const conf = a.confidence || []
+      if (!pts || pts.length < 17) return null
+      const out: KP[] = []
+      for (let i = 0; i < 17; i++) {
+        const p = pts[i]
+        if (!p) return null
+        out.push({ x: p.x, y: p.y, c: conf[i] !== undefined ? conf[i] : 1 })
+      }
+      return out
+    },
+
+    // 教学视频播放进度回调（提供准确的播放位置，自动含倍速影响）
+    onTimeUpdate(e: any) {
+      if (e && e.detail && typeof e.detail.currentTime === 'number') {
+        this.data._videoTime = e.detail.currentTime
+      }
     },
 
     // 返回：优先返回上一页，无栈时回首页
@@ -742,6 +1090,7 @@ Component({
         supported: false,
         unsupportedReason: reason,
         statusText: '不可用',
+        aligning: false,
       })
     },
 
@@ -753,6 +1102,10 @@ Component({
       if (this.data._scoreTimer) {
         clearInterval(this.data._scoreTimer)
         this.data._scoreTimer = 0
+      }
+      if (this.data._alignTimer) {
+        clearInterval(this.data._alignTimer)
+        this.data._alignTimer = 0
       }
       const listener = this.data._frameListener
       if (listener) {

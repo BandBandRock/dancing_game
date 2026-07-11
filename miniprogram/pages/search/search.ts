@@ -7,15 +7,15 @@ interface Song {
   video: string
 }
 
-const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
+import { toCloudFileID } from '../../utils/cloudMedia'
 
 function resolveVideo(video: string): string {
-  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+  return toCloudFileID(video)
 }
 
 const ALL_SONGS: Song[] = [
   // —— 广场舞（12 首）——
-  { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'https://dancing-1253975745.cos.ap-guangzhou.myqcloud.com/v1_coco17.mp4' },
+  { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'cloud://cloud1-d9gm4mnma453a20a7.636c-cloud1-d9gm4mnma453a20a7-1253975745/v1.mp4' },
   { name: '小苹果', artist: '筷子兄弟', type: '广场舞', duration: '03:22', video: 'gcd-02.mp4' },
   { name: '荷塘月色', artist: '凤凰传奇', type: '广场舞', duration: '03:53', video: 'gcd-03.mp4' },
   { name: '酒醉的蝴蝶', artist: '崔伟立', type: '广场舞', duration: '03:45', video: 'gcd-04.mp4' },

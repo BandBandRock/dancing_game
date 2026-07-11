@@ -1,6 +1,4 @@
 // home.ts
-import { uploadVideo } from '../../utils/cosUpload'
-
 interface Song {
   name: string
   artist: string
@@ -9,15 +7,15 @@ interface Song {
   video: string
 }
 
-const VIDEO_BASE = 'http://127.0.0.1:8081/video/'
+import { toCloudFileID } from '../../utils/cloudMedia'
 
 function resolveVideo(video: string): string {
-  return /^https?:\/\//.test(video) ? video : VIDEO_BASE + video
+  return toCloudFileID(video)
 }
 
 const ALL_SONGS: Song[] = [
   // —— 广场舞（12 首）——
-  { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'https://dancing-1253975745.cos.ap-guangzhou.myqcloud.com/v1_coco17.mp4' },
+  { name: '爱如毒酒', artist: '海生', type: '广场舞', duration: '03:32', video: 'cloud://cloud1-d9gm4mnma453a20a7.636c-cloud1-d9gm4mnma453a20a7-1253975745/v1.mp4' },
   { name: '小苹果', artist: '筷子兄弟', type: '广场舞', duration: '03:22', video: 'gcd-02.mp4' },
   { name: '荷塘月色', artist: '凤凰传奇', type: '广场舞', duration: '03:53', video: 'gcd-03.mp4' },
   { name: '酒醉的蝴蝶', artist: '崔伟立', type: '广场舞', duration: '03:45', video: 'gcd-04.mp4' },
@@ -91,8 +89,6 @@ Component({
   data: {
     keyword: '',
     filtered: [] as Song[],
-    testing: false, // 测试上传中
-    uploadPercent: 0, // 上传进度 0~100
     shaking: {
       search: false,
       ballroom: false,
@@ -104,73 +100,6 @@ Component({
   },
 
   methods: {
-    // 测试按钮：选用户自己的视频 → 上传到云存储 uploads/test_{随机}.mp4 → 播放
-    async testUpload() {
-      if (this.data.testing) return
-      this.setData({ testing: true, uploadPercent: 0 })
-      console.log('[testUpload] 点击，准备选择视频')
-
-      try {
-        // 1. 选用户自己的视频（相册/拍摄）
-        const tempFilePath = await new Promise<string>((resolve, reject) => {
-          wx.chooseMedia({
-            count: 1,
-            mediaType: ['video'],
-            sourceType: ['album', 'camera'],
-            maxDuration: 60,
-            success: (res: any) => {
-              console.log('[testUpload] chooseMedia success 原始返回:', res)
-              const file = res.tempFiles && res.tempFiles[0]
-              if (file && file.tempFilePath) {
-                resolve(file.tempFilePath)
-              } else {
-                console.error('[testUpload] chooseMedia 返回异常：没有 tempFilePath', res)
-                reject(new Error('chooseMedia 返回异常：未找到 tempFilePath'))
-              }
-            },
-            fail: (err: any) => {
-              console.error('[testUpload] chooseMedia fail:', err)
-              reject(err)
-            },
-            complete: (res: any) => {
-              console.log('[testUpload] chooseMedia complete 原始返回:', res)
-            },
-          })
-        })
-        console.log('[testUpload] 已选择视频:', tempFilePath)
-
-        // 2. 上传到云存储：uploads/test_{随机}.mp4（创建者=当前用户，自带读权限）
-        const rand = Math.random().toString(36).slice(2, 8)
-        const result = await uploadVideo({
-          filePath: tempFilePath,
-          fileName: `test_${rand}.mp4`,
-          onProgress: (p) => {
-            const percent = Math.round(p * 100)
-            this.setData({ uploadPercent: percent })
-            console.log('[testUpload] 进度', percent)
-          },
-        })
-
-        this.setData({ testing: false })
-        console.log('[testUpload] 上传成功 fileID:', result.fileID, '临时地址:', result.url)
-
-        // 3. 用返回的临时地址直接播放，验证上传链路
-        if (result.url) {
-          wx.previewMedia({ sources: [{ url: result.url, type: 'video' }] })
-        } else {
-          wx.showModal({
-            title: '上传成功（但临时地址为空）',
-            content: 'fileID:\n' + result.fileID,
-            showCancel: false,
-          })
-        }
-      } catch (err) {
-        this.setData({ testing: false })
-        console.error('[testUpload] 失败', err)
-        wx.showToast({ title: '上传失败，看控制台', icon: 'none' })
-      }
-    },
-
     onSearchInput(e: any) {
       const keyword = e.detail.value
       this.setData({ keyword })
