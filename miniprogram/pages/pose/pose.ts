@@ -47,6 +47,7 @@ const SAMPLE_INTERVAL = 200   // 打分采样间隔(ms)：每 200ms 比对一次
 const FLIP_REF = true         // 示范视频是否镜像：自拍预览被系统镜像，默认翻转参考以对齐左右
 const EMA_ALPHA = 0.3         // 分数平滑：瞬时分权重 0.3，历史分权重 0.7
 const SKIP_WARN_FRAMES = 15   // 连续跳过(多人/缺帧)达 15 次(≈3s) → 触发红色告警
+const SKIP_TAIL = 5           // 抖音教学视频末尾广告语时长(秒)：播放到此处即结束，跳过广告
 
 // 对齐阶段参数已迁移至 globalData.align（见 app.ts），由 alignCfg() 读取
 
@@ -130,6 +131,8 @@ Component({
     alignProgress: 0,     // 对齐进度 0~100
     inBox: false,         // 当前单人是否整体落在红框内（用于 UI 反馈）
     alignHint: '把身体中部对准红框',  // 对齐提示文案（居中/太远/太近）
+    counting: false,     // 是否处于「3-2-1 倒计时」阶段（对齐达标后、正式开始前）
+    countdown: 0,        // 倒计时数字（3/2/1），0 表示不显示
     shaking: {         // 倍速按钮颤动状态
       s05: false, s1: false,
     },
@@ -163,6 +166,8 @@ Component({
     _alignTooFar: false,   // 站太远（躯干过小）
     _alignTooNear: false,  // 站太近（躯干过大）
     _alignHold: 3000,      // 当前对齐所需站定时长(ms)，来自 alignCfg()
+    _videoDuration: 0,     // 教学视频总时长(秒)，来自 loadedmetadata
+    _countdownTimer: 0,    // 3-2-1 倒计时计时器
 
     // ---- 录制自己的跳舞视频 ----
     _wantRecord: false,  // 是否已请求录制（点「开始跳舞」后置 true）
@@ -251,8 +256,32 @@ Component({
 
     // 点击「开始跳舞」：手动开始（无姿态识别降级时的兜底入口）
     startDance() {
-      if (this.data.started || this.data.aligning) return
-      this.beginGame()
+      if (this.data.started || this.data.aligning || this.data.counting) return
+      this.startWithCountdown()
+    },
+
+    // 对齐达标 / 手动开始 → 摄像头收缩到右下角 + 3-2-1 倒计时，再正式开始
+    startWithCountdown() {
+      // aligning 已=false（收缩过渡由 CSS 处理），这里只负责倒计时
+      this.runCountdown(() => this.beginGame())
+    },
+
+    // 3-2-1 倒计时：每 1s 递减，归零后回调正式开始
+    runCountdown(cb: () => void) {
+      this.setData({ counting: true, statusText: '准备…' })
+      let n = 3
+      this.setData({ countdown: n })
+      this.data._countdownTimer = setInterval(() => {
+        n -= 1
+        if (n <= 0) {
+          clearInterval(this.data._countdownTimer)
+          this.data._countdownTimer = 0
+          this.setData({ counting: false, countdown: 0 })
+          cb()
+        } else {
+          this.setData({ countdown: n })
+        }
+      }, 1000) as unknown as number
     },
 
     // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录（视频上传云端）
@@ -879,7 +908,7 @@ Component({
 
       if (p >= 100) {
         this.stopAligning()
-        this.beginGame()   // 站定达标，自动开始游戏
+        this.startWithCountdown()   // 站定达标：摄像头收缩 + 3-2-1 倒计时后开始
       }
     },
 
@@ -1066,7 +1095,20 @@ Component({
     // 教学视频播放进度回调（提供准确的播放位置，自动含倍速影响）
     onTimeUpdate(e: any) {
       if (e && e.detail && typeof e.detail.currentTime === 'number') {
-        this.data._videoTime = e.detail.currentTime
+        const t = e.detail.currentTime
+        this.data._videoTime = t
+        // 跳过抖音视频末尾广告语：播放到「总时长 - SKIP_TAIL」即结束本次跳舞
+        const dur = this.data._videoDuration
+        if (this.data.started && !this.data.ended && dur > SKIP_TAIL + 1 && t >= dur - SKIP_TAIL) {
+          this.finishDance()
+        }
+      }
+    },
+
+    // 教学视频元信息（拿到总时长，用于跳过末尾广告语）
+    onVideoMeta(e: any) {
+      if (e && e.detail && typeof e.detail.duration === 'number') {
+        this.data._videoDuration = e.detail.duration
       }
     },
 
@@ -1106,6 +1148,10 @@ Component({
       if (this.data._alignTimer) {
         clearInterval(this.data._alignTimer)
         this.data._alignTimer = 0
+      }
+      if (this.data._countdownTimer) {
+        clearInterval(this.data._countdownTimer)
+        this.data._countdownTimer = 0
       }
       const listener = this.data._frameListener
       if (listener) {

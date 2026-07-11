@@ -14,6 +14,7 @@
     playback-rate="{{rate}}"
     bindended="onVideoEnded"
     bindtimeupdate="onTimeUpdate"
+    bindloadedmetadata="onVideoMeta"
   ></video>
 
   <!-- 连续多人/缺帧红色告警：屏幕边缘红色渐变闪烁 -->
@@ -30,7 +31,7 @@
   <view wx:if="{{showPraise}}" class="praise-text">你真棒</view>
 
   <!-- 倍速选择栏 -->
-  <view wx:if="{{danceVideo && !aligning}}" class="speed-panel">
+  <view wx:if="{{danceVideo && !aligning && !counting}}" class="speed-panel">
     <view
       class="speed-tag {{rate === 0.5 ? 'speed-tag-on' : ''}} {{shaking.s05 ? 'tag-shake' : ''}}"
       hover-class="tag-hover"
@@ -114,8 +115,16 @@
     <view class="align-pct">{{alignProgress}}%</view>
   </view>
 
+  <!-- 3-2-1 倒计时遮罩（识别通过后、正式开始前；分三个元素以重放动画） -->
+  <view wx:if="{{counting}}" class="count-overlay">
+    <view wx:if="{{countdown === 3}}" class="count-num">3</view>
+    <view wx:elif="{{countdown === 2}}" class="count-num">2</view>
+    <view wx:elif="{{countdown === 1}}" class="count-num">1</view>
+    <view class="count-tip">准备…</view>
+  </view>
+
   <!-- 开始跳舞遮罩（未开始且未对齐时显示，降级兜底） -->
-  <view wx:if="{{!started && !aligning}}" class="start-mask">
+  <view wx:if="{{!started && !aligning && !counting}}" class="start-mask">
     <view class="start-card">
       <text class="start-title">{{songName || '广场舞'}}</text>
       <text class="start-sub">准备好就开始跳吧</text>
