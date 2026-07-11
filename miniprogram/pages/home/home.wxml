@@ -58,11 +58,11 @@
 
     <!-- 第一行：交际舞 + 广场舞 -->
     <view class="category-row">
-      <button class="big-cat-btn ballroom-btn {{shaking.ballroom ? 'pressed shaking' : ''}}" bindtap="goBallroom">
+      <button class="big-cat-btn ballroom-btn" hover-class="pressed" bindtap="goBallroom">
         <text class="big-cat-emoji">💫</text>
         <text>交际舞</text>
       </button>
-      <button class="big-cat-btn square-btn {{shaking.square ? 'pressed shaking' : ''}}" bindtap="goSquare">
+      <button class="big-cat-btn square-btn" hover-class="pressed" bindtap="goSquare">
         <text class="big-cat-emoji">🎀</text>
         <text>广场舞</text>
       </button>
@@ -70,11 +70,11 @@
 
     <!-- 第二行：民族舞 + 养生保健 -->
     <view class="category-row">
-      <button class="big-cat-btn folk-btn {{shaking.folk ? 'pressed shaking' : ''}}" bindtap="goFolk">
+      <button class="big-cat-btn folk-btn" hover-class="pressed" bindtap="goFolk">
         <text class="big-cat-emoji">🏮</text>
         <text>民族舞</text>
       </button>
-      <button class="big-cat-btn health-btn {{shaking.health ? 'pressed shaking' : ''}}" bindtap="goHealth">
+      <button class="big-cat-btn health-btn" hover-class="pressed" bindtap="goHealth">
         <text class="big-cat-emoji">🍃</text>
         <text>养生操</text>
       </button>

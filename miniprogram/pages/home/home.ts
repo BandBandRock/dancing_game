@@ -294,7 +294,6 @@ Component({
           // 弹出输入框让用户输入歌名
           wx.showModal({
             title: '输入歌曲名称',
-            content: '请为上传的舞蹈起个名字',
             editable: true,
             placeholderText: '如：我的舞蹈作品',
             success: (modalRes) => {
