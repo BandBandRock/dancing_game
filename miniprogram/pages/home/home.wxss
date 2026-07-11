@@ -11,20 +11,6 @@ page {
   padding: 24rpx 32rpx;
 }
 
-/* 测试上传按钮 */
-.test-upload-btn {
-  margin-top: 32rpx;
-  background: #ff9800;
-  color: #fff;
-  border-radius: 16rpx;
-  font-size: 30rpx;
-}
-
-.test-upload-btn[disabled] {
-  background: #ccc;
-  color: #fff;
-}
-
 /* 搜索条 */
 .search-bar {
   display: flex;
@@ -53,36 +39,6 @@ page {
   font-size: 32rpx;
   color: #bbb;
   padding: 0 16rpx;
-}
-
-.search-btn {
-  background: #07c160;
-  color: #fff;
-  font-size: 30rpx;
-  padding: 16rpx 36rpx;
-  border-radius: 50rpx;
-  margin-left: 16rpx;
-  border-bottom: 6rpx solid rgba(0, 0, 0, 0.2);
-  transform: translateY(0);
-  transition: all 0.1s;
-}
-
-.search-btn.s-pressed {
-  border-bottom: 2rpx solid rgba(0, 0, 0, 0.15);
-  transform: translateY(4rpx);
-}
-
-@keyframes s-shake {
-  0%, 100% { transform: translateY(4rpx) translateX(0); }
-  15% { transform: translateY(4rpx) translateX(-3rpx); }
-  35% { transform: translateY(4rpx) translateX(3rpx); }
-  55% { transform: translateY(4rpx) translateX(-2rpx); }
-  75% { transform: translateY(4rpx) translateX(2rpx); }
-  90% { transform: translateY(4rpx) translateX(-1rpx); }
-}
-
-.search-btn.s-shaking {
-  animation: s-shake 0.35s ease;
 }
 
 /* 按钮行 */

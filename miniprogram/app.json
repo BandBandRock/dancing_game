@@ -10,6 +10,7 @@
     "pages/dance_search/dance_search",
     "pages/pose/pose",
     "pages/playvideo/playvideo",
+    "pages/feedback/feedback",
     "pages/upload/upload"
   ],
   "window": {

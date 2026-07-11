@@ -6,7 +6,6 @@
     <text class="search-icon">🔍</text>
     <input class="search-input" placeholder="搜索歌曲 / 歌手 / 类型" bindinput="onSearchInput" value="{{keyword}}" confirm-type="search" bindconfirm="doSearch" />
     <text wx:if="{{keyword}}" class="search-clear" bindtap="onClear">✕</text>
-    <button class="search-btn {{shaking.search ? 's-pressed s-shaking' : ''}}" bindtap="doSearch">搜索</button>
   </view>
 
   <!-- 关键词不为空 → 拆行：有结果则显示列表，否则提示；大于 1 行时收起 4 个分类大按钮 -->
@@ -44,10 +43,6 @@
         <text class="btn-emoji">📋</text>
         <text>历史</text>
       </button>
-      <button class="nav-btn rank-btn" bindtap="goRank">
-        <text class="btn-emoji">🏆</text>
-        <text>排名</text>
-      </button>
     </view>
 
     <!-- 第一行：交际舞 + 广场舞 -->
@@ -74,14 +69,6 @@
       </button>
     </view>
   </block>
-
-  <!-- 测试按钮：选视频上传到云存储并播放 -->
-  <button class="test-upload-btn" bindtap="testUpload" disabled="{{testing}}">
-    {{testing ? '上传中 ' + uploadPercent + '%' : '测试上传并播放视频'}}
-  </button>
-  <view wx:if="{{testing}}" class="upload-progress">
-    正在上传到云存储… {{uploadPercent}}%
-  </view>
 </view>
 
 <!-- Debug 入口：姿态识别 -->

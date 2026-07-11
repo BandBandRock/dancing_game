@@ -50,36 +50,26 @@
       </view>
     </block>
 
-    <!-- 搜索框下方空白区：推荐广场舞竖屏视频（未打开时显示封面） -->
-    <view
-      wx:if="{{!keyword && (!isScoped || activeType === '广场舞')}}"
-      class="rec-section"
-    >
-      <view class="rec-head">
-        <text class="rec-title">广场舞 · 竖屏教学</text>
-        <text class="rec-more">更多 ›</text>
-      </view>
-      <view class="rec-grid">
+    <!-- 默认落地（未搜索、未带舞种，如跳完舞按“退出”回来）：推荐广场舞视频网格，填充空白 -->
+    <block wx:if="{{!keyword && !isScoped}}">
+      <view class="rec-title">🔥 热门广场舞视频</view>
+      <view class="video-grid">
         <view
-          wx:for="{{recommendVideos}}"
-          wx:key="title"
-          class="rec-card"
-          bindtap="onOpenRecVideo"
-          data-title="{{item.title}}"
+          wx:for="{{recommendList}}"
+          wx:key="name"
+          class="video-card"
+          bindtap="onRecTap"
+          data-name="{{item.name}}"
         >
-          <view class="rec-cover">
-            <image wx:if="{{item.cover}}" class="rec-cover-img" src="{{item.cover}}" mode="aspectFill" />
-            <view wx:else class="rec-cover-ph">
-              <text class="rec-emoji">💃</text>
-            </view>
-            <text class="rec-badge">竖屏</text>
-            <view class="rec-play">▶</view>
-            <text class="rec-dur">03:32</text>
+          <view class="video-thumb" style="background:{{item.cover}}">
+            <view class="thumb-play">▶</view>
+            <view class="thumb-dur">{{item.duration}}</view>
           </view>
-          <text class="rec-name">{{item.title}}</text>
+          <view class="video-card-name">{{item.name}}</view>
+          <view class="video-card-artist">{{item.artist}}</view>
         </view>
       </view>
-    </view>
+    </block>
   </view>
 </scroll-view>
 
