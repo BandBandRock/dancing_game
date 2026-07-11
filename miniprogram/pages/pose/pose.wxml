@@ -25,6 +25,18 @@
     <text class="song-tag-text">{{songName}}</text>
   </view>
 
+  <!-- 得分进度条 -->
+  <view class="score-panel">
+    <view class="score-head">
+      <text class="score-label">得分</text>
+      <text class="score-value {{moving ? 'score-up' : 'score-down'}}">{{score}}</text>
+    </view>
+    <view class="score-bar">
+      <view class="score-fill" style="width: {{score}}%"></view>
+    </view>
+    <text class="score-hint">{{moving ? '动起来啦，加分！' : '跳起来才能加分哦'}}</text>
+  </view>
+
   <!-- 右下角摄像头小窗 + 骨骼识别 -->
   <view class="cam-float">
     <camera

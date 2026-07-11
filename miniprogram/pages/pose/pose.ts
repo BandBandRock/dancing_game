@@ -34,6 +34,10 @@ Component({
     fps: 0,
     bodyCount: 0,     // 当前检测到的人体数量（调试用）
 
+    // ---- 算分 ----
+    score: 60,        // 当前得分（0~100），初始 60，进度条展示
+    moving: false,    // 最近一次判定是否「在动」（手臂-躯干角度>阈值）
+
     // ---- 内部状态：直接读写、不触发渲染（官方 demo 同款做法）----
     _session: null as VKSession | null,
     _canvas: null as any,
@@ -50,6 +54,7 @@ Component({
     _frameListener: null as any, // onCameraFrame 监听器
     _frameW: 0,          // 最近一帧原始宽
     _frameH: 0,          // 最近一帧原始高
+    _scoreTimer: 0,      // 每 2 秒判定一次的计时器
   },
 
   lifetimes: {
@@ -169,6 +174,7 @@ Component({
         this.setData({ statusText: '识别中，请站到画面中' })
         this.startFrameFeed()   // 开始抽帧送检
         this.startRenderLoop()  // 开始画骨骼
+        this.startScoring()     // 开始每 2 秒算分
       })
     },
 
@@ -315,6 +321,71 @@ Component({
       this.setData({ mirror: !this.data.mirror })
     },
 
+    // ---- 算分：每 2 秒判定一次 ----
+    // 规则：画面里有人且「在动」（手臂与躯干夹角 > 60°）→ 加分，否则扣分。
+    startScoring() {
+      if (this.data._scoreTimer) return
+      this.data._scoreTimer = setInterval(() => {
+        this.evaluateScore()
+      }, 2000) as unknown as number
+    },
+
+    evaluateScore() {
+      const anchors = this.data._anchors
+      let delta = -5          // 默认扣分（没人 / 站着不动）
+      let moving = false
+
+      if (anchors && anchors.length) {
+        let maxAngle = -1
+        for (const a of anchors) {
+          const ang = this.armTorsoAngle(a)
+          if (ang > maxAngle) maxAngle = ang
+        }
+        if (maxAngle >= 60) {
+          delta = 5
+          moving = true
+        }
+      }
+
+      let score = this.data.score + delta
+      if (score > 100) score = 100
+      if (score < 0) score = 0
+      this.setData({ score, moving })
+    },
+
+    // 计算某个人体「手臂-躯干」最大夹角（度）。以肩为顶点，
+    // 分别用肩→肘、肩→腕 对 肩→髋 求角，左右四组取最大；无有效点返回 -1。
+    armTorsoAngle(anchor: VKBodyAnchor): number {
+      const pts = anchor.points
+      const conf = anchor.confidence || []
+      if (!pts || !pts.length) return -1
+      const ok = (i: number) =>
+        !!pts[i] && (conf[i] === undefined || conf[i] >= SCORE_THRESHOLD)
+
+      // 以 vertex 为顶点，求 vertex→a 与 vertex→b 两向量的夹角
+      const angle = (vertex: number, a: number, b: number): number => {
+        if (!ok(vertex) || !ok(a) || !ok(b)) return -1
+        const v1x = pts[a].x - pts[vertex].x
+        const v1y = pts[a].y - pts[vertex].y
+        const v2x = pts[b].x - pts[vertex].x
+        const v2y = pts[b].y - pts[vertex].y
+        const m1 = Math.hypot(v1x, v1y)
+        const m2 = Math.hypot(v2x, v2y)
+        if (m1 === 0 || m2 === 0) return -1
+        let cos = (v1x * v2x + v1y * v2y) / (m1 * m2)
+        cos = Math.max(-1, Math.min(1, cos))
+        return (Math.acos(cos) * 180) / Math.PI
+      }
+
+      // 左臂：肩5 顶点，肘7/腕9 对 髋11；右臂：肩6 顶点，肘8/腕10 对 髋12
+      return Math.max(
+        angle(5, 7, 11),
+        angle(5, 9, 11),
+        angle(6, 8, 12),
+        angle(6, 10, 12),
+      )
+    },
+
     // 返回：优先返回上一页，无栈时回首页
     goBack() {
       const pages = getCurrentPages()
@@ -342,6 +413,10 @@ Component({
       const canvas = this.data._canvas
       if (this.data._rafId && canvas) {
         canvas.cancelAnimationFrame(this.data._rafId)
+      }
+      if (this.data._scoreTimer) {
+        clearInterval(this.data._scoreTimer)
+        this.data._scoreTimer = 0
       }
       const listener = this.data._frameListener
       if (listener) {
