@@ -12,8 +12,9 @@ interface PendingDance {
   date: string
   hour: number
   minute: number
-  video: string // 本地持久化的本人跳舞视频
+  video: string // 本人跳舞视频（云端 fileID 或本地兜底）
   teach: string // 教学视频，供「重跳」复用
+  skeleton?: string // 用户跳舞骨骼序列云端地址（cloud:// fileID），供「呈现骨骼视频」回放
 }
 
 Page({
@@ -27,6 +28,7 @@ Page({
     timeText: '',
     video: '',
     teach: '',
+    skeleton: '',
     saved: false,
     saving: false,
     saveLabel: '保存',
@@ -47,6 +49,7 @@ Page({
         timeText: pad(p.hour) + ':' + pad(p.minute),
         video: p.video,
         teach: p.teach,
+        skeleton: p.skeleton || '',
       })
     }
   },
@@ -100,29 +103,38 @@ Page({
 
   // 真正执行保存（上传 + 写历史），返回最终 video（云端 fileID 或本地兜底路径）
   doSave(): Promise<string> {
-    return uploadVideo({
-      filePath: this.data.video,
-      fileName: `dance_${Date.now()}.mp4`,
-      timeoutMs: 300000,
-    })
-      .then((res: any) => res.fileID)
-      .catch((e: any) => {
-        console.error('[feedback] 云端上传失败，用本地路径兜底', e)
-        return '' // 云端失败：用本地路径兜底
-      })
-      .then((fid: string) => {
-        const finalVideo = fid || this.data.video
-        addHistory({
-          song: this.data.song,
-          score: this.data.score,
-          date: this.data.date,
-          hour: this.data.hour,
-          minute: this.data.minute,
-          video: finalVideo,
+    // pose 端已把视频上传云端（video 已是 cloud:// fileID），直接复用，避免重复上传；
+    // 若为本地兜底路径则在此上传。骨骼已是云端 fileID，原样写入历史。
+    const video = this.data.video
+    const upload$ = typeof video === 'string' && video.indexOf('cloud://') === 0
+      ? Promise.resolve(video)
+      : uploadVideo({
+          filePath: video,
+          fileName: `dance_${Date.now()}.mp4`,
+          timeoutMs: 300000,
         })
+          .then((res: any) => res.fileID)
+          .catch((e: any) => {
+            console.error('[feedback] 云端上传失败，用本地路径兜底', e)
+            return '' // 云端失败：用本地路径兜底
+          })
+
+    return upload$.then((fid: string) => {
+      const finalVideo = fid || video
+      return addHistory({
+        song: this.data.song,
+        score: this.data.score,
+        date: this.data.date,
+        hour: this.data.hour,
+        minute: this.data.minute,
+        video: finalVideo,
+        skeleton: this.data.skeleton || undefined,
+        teach: this.data.teach || undefined,
+      }).then(() => {
         wx.removeStorageSync('__pendingDance')
         return finalVideo
       })
+    })
   },
 
   // 分享：只弹出选择，不立即保存（保存推迟到用户选定分享方式之后）

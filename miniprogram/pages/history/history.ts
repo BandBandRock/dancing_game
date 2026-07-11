@@ -2,7 +2,7 @@
 import {
   getHistory,
   clearHistory,
-  setHistory,
+  deleteHistory,
   DanceRecord,
 } from '../../utils/danceHistory'
 
@@ -48,26 +48,21 @@ Component({
     },
 
     loadRecords() {
-      // 读取本地记录（默认空，跳舞后由跳舞页 addHistory 写入）
-      const stored = getHistory()
-      // 过滤掉早期遗留的示例数据（id 以 seed_ 开头），并清出存储
-      const raw = stored.filter((r) => !String(r.id || '').startsWith('seed_'))
-      if (raw.length !== stored.length) {
-        setHistory(raw)
-      }
-      const list: DisplayRecord[] = raw.map((r) => {
-        const d = new Date(r.date + 'T00:00:00')
-        const w = WEEK[d.getDay()]
-        return {
-          ...r,
-          dateText: `${r.date.slice(5)} 周${w}`,
-          timeText: `${pad(r.hour)}:${pad(r.minute)} 开始`,
-          scoreText: `平均分 ${r.score}`,
-        }
+      // 读取云端记录（默认空，跳舞后由跳舞页 addHistory 写入），最新在前
+      getHistory().then((raw) => {
+        const list: DisplayRecord[] = raw.map((r) => {
+          const d = new Date(r.date + 'T00:00:00')
+          const w = WEEK[d.getDay()]
+          return {
+            ...r,
+            dateText: `${r.date.slice(5)} 周${w}`,
+            timeText: `${pad(r.hour)}:${pad(r.minute)} 开始`,
+            scoreText: `平均分 ${r.score}`,
+          }
+        })
+        // 跳舞次数 = 记录条数（空时为 0，每录一次 +1）
+        this.setData({ list, totalCount: list.length })
       })
-      // 跳舞次数 = 记录条数（空时为 0，每录一次 +1）
-      const totalCount = list.length
-      this.setData({ list, totalCount })
     },
 
     // 点击齿轮图标 → 弹出调试信息（显示 fileId / 骨骼 JSON fileId）
@@ -108,6 +103,8 @@ Component({
           encodeURIComponent(rec.video) +
           '&skeleton=' +
           encodeURIComponent(rec.skeleton) +
+          '&teach=' +
+          encodeURIComponent(rec.teach || '') +
           '&song=' +
           encodeURIComponent(rec.song),
       })
@@ -148,12 +145,13 @@ Component({
         confirmColor: '#e64340',
         success: (res) => {
           if (res.confirm) {
-            // 保留未选中的，写回存储
-            const remain = getHistory().filter((r) => !ids.includes(r.id))
-            setHistory(remain)
-            wx.showToast({ title: '已删除', icon: 'success' })
-            this.setData({ selecting: false, selectedMap: {}, selectedCount: 0 })
-            this.loadRecords()
+            // 从云端逐条删除选中的记录
+            const toDelete = this.data.list.filter((r) => ids.includes(r.id))
+            Promise.all(toDelete.map((r) => deleteHistory(r._id || r.id))).then(() => {
+              wx.showToast({ title: '已删除', icon: 'success' })
+              this.setData({ selecting: false, selectedMap: {}, selectedCount: 0 })
+              this.loadRecords()
+            })
           }
         },
       })
@@ -188,8 +186,7 @@ Component({
         confirmColor: '#e64340',
         success: (res) => {
           if (res.confirm) {
-            clearHistory()
-            this.loadRecords()
+            clearHistory().then(() => this.loadRecords())
           }
         },
       })

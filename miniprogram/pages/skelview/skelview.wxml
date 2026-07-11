@@ -1,17 +1,35 @@
-<!--skelview.wxml 骨骼回放 demo-->
-<view class="wrap">
-  <video
-    wx:if="{{playUrl}}"
-    class="player"
-    src="{{playUrl}}"
-    autoplay="{{true}}"
-    controls="{{true}}"
-    object-fit="fill"
-    bindtimeupdate="onTimeUpdate"
-  ></video>
+<!--skelview.wxml 骨骼回放：横屏，左右双视频对比（示例 + 用户录制），骨骼叠加在用户视频上-->
+<view class="wrap {{hasTeach ? '' : 'single'}}">
+  <!-- 左：示例 / 教学视频 -->
+  <view class="col teach" wx:if="{{hasTeach}}">
+    <video
+      wx:if="{{teachUrl}}"
+      class="player"
+      src="{{teachUrl}}"
+      autoplay="{{true}}"
+      controls="{{true}}"
+      muted="{{true}}"
+      object-fit="contain"
+    ></video>
+    <text class="tag">示例</text>
+  </view>
 
-  <!-- 骨骼叠加层：盖在视频之上，不拦截触摸，保证下方视频控件可用 -->
-  <canvas type="2d" id="skel" class="overlay"></canvas>
+  <!-- 右：用户录制视频 + 骨骼叠加 -->
+  <view class="col user">
+    <video
+      wx:if="{{playUrl}}"
+      class="player"
+      src="{{playUrl}}"
+      autoplay="{{true}}"
+      controls="{{true}}"
+      object-fit="contain"
+      bindloadedmetadata="onMeta"
+      bindtimeupdate="onTimeUpdate"
+    ></video>
+    <text class="tag">我的</text>
+    <!-- 骨骼叠加层：盖在用户视频之上，不拦截触摸，保证下方视频控件可用 -->
+    <canvas type="2d" id="skel" class="overlay"></canvas>
+  </view>
 
   <!-- 顶部栏 -->
   <view class="topbar">
@@ -22,4 +40,6 @@
 
   <!-- 调试 / 错误提示 -->
   <view wx:if="{{errorMessage}}" class="err">{{errorMessage}}</view>
+  <!-- 调试角标：原视频信息（分辨率 / 骨骼帧数 / 进度） -->
+  <view wx:if="{{debugText}}" class="debug">{{debugText}}</view>
 </view>
