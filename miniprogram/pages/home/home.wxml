@@ -71,7 +71,7 @@
       </button>
       <button class="big-cat-btn health-btn {{shaking.health ? 'pressed shaking' : ''}}" bindtap="goHealth">
         <text class="big-cat-emoji">🍃</text>
-        <text>养生操</text>
+        <text>健身操</text>
       </button>
     </view>
   </block>

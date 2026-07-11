@@ -23,10 +23,13 @@ export interface UploadOptions {
   timeoutMs?: number
 }
 
-// 生成云存储路径：uploads/时间戳_随机串.扩展名
+// 生成云存储路径：默认 uploads/时间戳_随机串.扩展名
+// 若 fileName 已包含 "/"（如 "common/xxx.mp4"），则视为完整相对路径，不再强加前缀
 function buildCloudPath(filePath: string, fileName?: string): string {
   const prefix = 'uploads/'
-  if (fileName) return prefix + fileName
+  if (fileName) {
+    return fileName.includes('/') ? fileName : prefix + fileName
+  }
   const extMatch = /\.([a-zA-Z0-9]+)$/.exec(filePath)
   const ext = extMatch ? extMatch[1] : 'mp4'
   const rand = Math.random().toString(36).slice(2, 8)
