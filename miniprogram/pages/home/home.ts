@@ -92,6 +92,7 @@ Component({
     keyword: '',
     filtered: [] as Song[],
     testing: false, // 测试上传中
+    uploadPercent: 0, // 上传进度 0~100
     shaking: {
       search: false,
       ballroom: false,
@@ -106,7 +107,8 @@ Component({
     // 测试按钮：选用户自己的视频 → 上传到云存储 uploads/test_{随机}.mp4 → 播放
     async testUpload() {
       if (this.data.testing) return
-      this.setData({ testing: true })
+      this.setData({ testing: true, uploadPercent: 0 })
+      console.log('[testUpload] 点击，准备选择视频')
 
       try {
         // 1. 选用户自己的视频（相册/拍摄）
@@ -116,41 +118,55 @@ Component({
             mediaType: ['video'],
             sourceType: ['album', 'camera'],
             maxDuration: 60,
-            success: (res) => resolve(res.tempFiles[0].tempFilePath),
-            fail: reject,
+            success: (res: any) => {
+              console.log('[testUpload] chooseMedia success 原始返回:', res)
+              const file = res.tempFiles && res.tempFiles[0]
+              if (file && file.tempFilePath) {
+                resolve(file.tempFilePath)
+              } else {
+                console.error('[testUpload] chooseMedia 返回异常：没有 tempFilePath', res)
+                reject(new Error('chooseMedia 返回异常：未找到 tempFilePath'))
+              }
+            },
+            fail: (err: any) => {
+              console.error('[testUpload] chooseMedia fail:', err)
+              reject(err)
+            },
+            complete: (res: any) => {
+              console.log('[testUpload] chooseMedia complete 原始返回:', res)
+            },
           })
         })
+        console.log('[testUpload] 已选择视频:', tempFilePath)
 
         // 2. 上传到云存储：uploads/test_{随机}.mp4（创建者=当前用户，自带读权限）
-        wx.showLoading({ title: '上传中 0%', mask: true })
         const rand = Math.random().toString(36).slice(2, 8)
         const result = await uploadVideo({
           filePath: tempFilePath,
           fileName: `test_${rand}.mp4`,
           onProgress: (p) => {
             const percent = Math.round(p * 100)
-            wx.showLoading({ title: `上传中 ${percent}%`, mask: true })
+            this.setData({ uploadPercent: percent })
+            console.log('[testUpload] 进度', percent)
           },
         })
 
-        wx.hideLoading()
         this.setData({ testing: false })
-        console.log('上传成功 fileID:', result.fileID, '临时地址:', result.url)
+        console.log('[testUpload] 上传成功 fileID:', result.fileID, '临时地址:', result.url)
 
         // 3. 用返回的临时地址直接播放，验证上传链路
         if (result.url) {
           wx.previewMedia({ sources: [{ url: result.url, type: 'video' }] })
         } else {
           wx.showModal({
-            title: '上传成功',
-            content: result.fileID,
+            title: '上传成功（但临时地址为空）',
+            content: 'fileID:\n' + result.fileID,
             showCancel: false,
           })
         }
       } catch (err) {
-        wx.hideLoading()
         this.setData({ testing: false })
-        console.error('测试上传失败', err)
+        console.error('[testUpload] 失败', err)
         wx.showToast({ title: '上传失败，看控制台', icon: 'none' })
       }
     },

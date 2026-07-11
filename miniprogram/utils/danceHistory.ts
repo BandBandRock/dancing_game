@@ -1,11 +1,13 @@
 // 跳舞历史记录的本地存储工具
 // ============================================================
-// 真实场景：用户跳完一支舞、评分结束后，跳舞/评分页（如 pose、dance_search）
-// 调用 addHistory({ song, score, date, hour, minute, video }) 写入一条记录。
+// 真实场景：用户跳完一支舞、评分结束后，pose 页调用
+// addHistory({ song, score, date, hour, minute, video }) 写入一条记录。
 // 历史页（pages/history/history）调用 getHistory() 读取并展示。
 //
-// 数据存在小程序本地 Storage（key: danceHistory），不占主包、无需后台。
-// 若要跨设备同步，可把 addHistory/getHistory 换成云开发/自建接口。
+// 存储：记录元数据（曲名/分数/时间）存在小程序本地 Storage（key: danceHistory）。
+// 视频本身已上传到云开发存储，video 字段存的是云端 fileID（形如
+// cloud://环境/uploads/dance_xxx.mp4），永久有效、跨设备可用；
+// 播放时由 playvideo 页用 wx.cloud.getTempFileURL 解析成临时地址播放。
 // ============================================================
 
 export interface DanceRecord {
@@ -15,7 +17,7 @@ export interface DanceRecord {
   date: string // 日期 YYYY-MM-DD
   hour: number // 开始小时 0-23
   minute: number // 开始分钟 0-59
-  video: string // 自己跳舞的视频地址（本地路径 或 云地址）
+  video: string // 自己跳舞的视频云端地址（cloud:// fileID）
 }
 
 const KEY = 'danceHistory'

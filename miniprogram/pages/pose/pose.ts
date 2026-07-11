@@ -3,6 +3,7 @@
 // VKSession / VKBodyAnchor 等类型见 typings/vk.d.ts
 
 import { addHistory } from '../../utils/danceHistory'
+import { uploadVideo } from '../../utils/cosUpload'
 
 // ---- 骨架连线（基于 VisionKit 23 点中稳定的 COCO-17 核心部分）----
 // 索引含义：0 鼻 1 左眼 2 右眼 3 左耳 4 右耳 5 左肩 6 右肩
@@ -115,8 +116,8 @@ Component({
       }
     },
 
-    // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录
-    finishDance() {
+    // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录（视频上传云端）
+    async finishDance() {
       if (!this.data.started || this.data.ended) return
       this.setData({ ended: true, started: false })
 
@@ -125,34 +126,55 @@ Component({
       const vc = wx.createVideoContext('danceVideo', this)
       try { vc.stop() } catch (e) {}
 
-      // 先停录制拿到自己跳舞的视频，再持久化、存入历史
-      this.stopRecording()
-        .then((tempPath) => this.persistVideo(tempPath))
-        .then((videoPath) => {
-          // 录制成功用自己跳舞的视频；失败则兜底用教学视频，保证历史不空
-          const finalVideo = videoPath || this.data.danceVideo
-          const start = new Date(this.data.startTime)
-          const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
-          const dateStr =
-            start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate())
-          addHistory({
-            song: this.data.songName || '未命名舞蹈',
-            score: this.data.score,
-            date: dateStr,
-            hour: start.getHours(),
-            minute: start.getMinutes(),
-            video: finalVideo,
-          })
+      // 先停录制拿到自己跳舞的视频，再上传云端、存入历史
+      let finalVideo = this.data.danceVideo // 兜底用教学视频
+      try {
+        const tempPath = await this.stopRecording()
+        if (tempPath) {
+          // 上传到云存储（云端 fileID 永久有效、跨设备可用），创建者=当前用户自带读权限
+          wx.showLoading({ title: '保存中…', mask: true })
+          try {
+            const result = await uploadVideo({
+              filePath: tempPath,
+              fileName: `dance_${Date.now()}.mp4`,
+              timeoutMs: 300000, // 跳舞视频较长，给 5 分钟
+            })
+            finalVideo = result.fileID
+            console.log('[pose] 跳舞视频已上传云端:', result.fileID)
+          } catch (e) {
+            console.error('[pose] 云端上传失败，兜底存本地', e)
+            // 上传失败：本地持久化兜底（仅本机可用）
+            const local = await this.persistVideo(tempPath)
+            finalVideo = local || this.data.danceVideo
+          }
+          wx.hideLoading()
+        }
+      } catch (e) {
+        wx.hideLoading()
+      }
 
-          wx.showToast({
-            title: videoPath ? '已保存你的跳舞视频' : '已保存到历史',
-            icon: 'success',
-          })
-          // 跳转到历史页查看记录
-          setTimeout(() => {
-            wx.reLaunch({ url: '../history/history' })
-          }, 800)
-        })
+      // 写入历史记录（video 现在是云端 fileID）
+      const start = new Date(this.data.startTime)
+      const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
+      const dateStr =
+        start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate())
+      addHistory({
+        song: this.data.songName || '未命名舞蹈',
+        score: this.data.score,
+        date: dateStr,
+        hour: start.getHours(),
+        minute: start.getMinutes(),
+        video: finalVideo,
+      })
+
+      wx.showToast({
+        title: finalVideo.indexOf('cloud://') === 0 ? '已保存到云端' : '已保存到历史',
+        icon: 'success',
+      })
+      // 跳转到历史页查看记录
+      setTimeout(() => {
+        wx.reLaunch({ url: '../history/history' })
+      }, 800)
     },
 
     // 开始录制摄像头（自己跳舞的视频）。摄像头就绪后调用。
