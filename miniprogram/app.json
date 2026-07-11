@@ -11,6 +11,7 @@
     "pages/pose/pose",
     "pages/playvideo/playvideo",
     "pages/skelview/skelview",
+    "pages/feedback/feedback",
     "pages/upload/upload"
   ],
   "window": {

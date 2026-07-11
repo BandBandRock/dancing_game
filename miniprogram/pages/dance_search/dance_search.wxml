@@ -49,37 +49,6 @@
         <view wx:if="{{filtered.length === 0}}" class="empty">没有找到相关歌曲</view>
       </view>
     </block>
-
-    <!-- 搜索框下方空白区：推荐广场舞竖屏视频（未打开时显示封面） -->
-    <view
-      wx:if="{{!keyword && (!isScoped || activeType === '广场舞')}}"
-      class="rec-section"
-    >
-      <view class="rec-head">
-        <text class="rec-title">广场舞 · 竖屏教学</text>
-        <text class="rec-more">更多 ›</text>
-      </view>
-      <view class="rec-grid">
-        <view
-          wx:for="{{recommendVideos}}"
-          wx:key="title"
-          class="rec-card"
-          bindtap="onOpenRecVideo"
-          data-title="{{item.title}}"
-        >
-          <view class="rec-cover">
-            <image wx:if="{{item.cover}}" class="rec-cover-img" src="{{item.cover}}" mode="aspectFill" />
-            <view wx:else class="rec-cover-ph">
-              <text class="rec-emoji">💃</text>
-            </view>
-            <text class="rec-badge">竖屏</text>
-            <view class="rec-play">▶</view>
-            <text class="rec-dur">03:32</text>
-          </view>
-          <text class="rec-name">{{item.title}}</text>
-        </view>
-      </view>
-    </view>
   </view>
 </scroll-view>
 

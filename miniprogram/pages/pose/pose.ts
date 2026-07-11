@@ -2,7 +2,6 @@
 // VisionKit 人体姿态实时骨骼渲染
 // VKSession / VKBodyAnchor 等类型见 typings/vk.d.ts
 
-import { addHistory } from '../../utils/danceHistory'
 import { uploadVideo } from '../../utils/cosUpload'
 import { resolveCloudFile } from '../../utils/cloudMedia'
 import { IAppOption, AlignConfig } from '../../app'
@@ -20,6 +19,7 @@ function alignCfg(): AlignConfig {
   const g = app && app.globalData && app.globalData.align
   return g ? { ...DEFAULT_ALIGN, ...g } : DEFAULT_ALIGN
 }
+
 
 // ---- 骨架连线（基于 VisionKit 23 点中稳定的 COCO-17 核心部分）----
 // 索引含义：0 鼻 1 左眼 2 右眼 3 左耳 4 右耳 5 左肩 6 右肩
@@ -107,6 +107,7 @@ Component({
     danceVideo: '',   // 主体教学视频 fileID/地址（从搜索页「去跳舞」带入，原始值）
     playUrl: '',      // 实际给 <video> 播放的地址（cloud:// 会先解析成临时 https）
     songName: '',     // 教学视频名称
+    songType: '',     // 舞种（广场舞/交谊舞…，用于退出后跳回该舞种列表）
     supported: true,
     unsupportedReason: '',
     statusText: '正在初始化…',
@@ -191,6 +192,7 @@ Component({
         this.setData({
           danceVideo: decodeURIComponent(options.video),
           songName: options.song ? decodeURIComponent(options.song) : '',
+          songType: options.type ? decodeURIComponent(options.type) : '',
           rate: 1,
         })
       }
@@ -284,7 +286,7 @@ Component({
       }, 1000) as unknown as number
     },
 
-    // 点击「结束跳舞」或视频播放完毕：结束并保存历史记录（视频上传云端）
+    // 点击「结束跳舞」或视频播放完毕：上传云端后跳转反馈页（由反馈页保存/分享落盘）
     async finishDance() {
       if (!this.data.started || this.data.ended) return
       this.setData({ ended: true, started: false })
@@ -294,7 +296,7 @@ Component({
       const vc = wx.createVideoContext('danceVideo', this)
       try { vc.stop() } catch (e) {}
 
-      // 先停录制拿到自己跳舞的视频，再上传云端、存入历史
+      // 先停录制拿到自己跳舞的视频，再上传云端
       let finalVideo = this.data.danceVideo // 兜底用教学视频
       try {
         const tempPath = await this.stopRecording()
@@ -343,29 +345,26 @@ Component({
         wx.hideLoading()
       }
 
-      // 写入历史记录（video 现在是云端 fileID）
+
       const start = new Date(this.data.startTime)
       const pad = (n: number) => (n < 10 ? '0' + n : '' + n)
       const dateStr =
         start.getFullYear() + '-' + pad(start.getMonth() + 1) + '-' + pad(start.getDate())
-      addHistory({
+      const pending: any = {
         song: this.data.songName || '未命名舞蹈',
+        type: this.data.songType || '',
         score: this.data.score,
         date: dateStr,
         hour: start.getHours(),
         minute: start.getMinutes(),
         video: finalVideo,
+        teach: this.data.danceVideo, // 教学视频，供「重跳」复用
         skeleton: skeletonFileID || undefined,
-      })
+      }
 
-      wx.showToast({
-        title: finalVideo.indexOf('cloud://') === 0 ? '已保存到云端' : '已保存到历史',
-        icon: 'success',
-      })
-      // 跳转到历史页查看记录
-      setTimeout(() => {
-        wx.reLaunch({ url: '../history/history' })
-      }, 800)
+      // 跳转反馈页（保存/分享由反馈页落盘到历史）
+      wx.setStorageSync('__pendingDance', pending)
+      wx.redirectTo({ url: '../feedback/feedback' })
     },
 
     // 开始录制摄像头（自己跳舞的视频）。摄像头就绪后调用。

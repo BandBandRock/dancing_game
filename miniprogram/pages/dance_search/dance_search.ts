@@ -118,16 +118,6 @@ Component({
     },
     fireworkActive: false,
     showPraise: false,
-    // 推荐视频：竖屏广场舞。cover 留空时用渐变占位封面；
-    // 正式上线把 cover 换成云服务器封面图地址、video 换成对应视频文件名即可。
-    recommendVideos: [
-      { title: '最炫民族风 · 背面教学', type: '广场舞', video: 'gcd-01.mp4', cover: '' },
-      { title: '小苹果 · 零基础跟练', type: '广场舞', video: 'gcd-02.mp4', cover: '' },
-      { title: '荷塘月色 · 慢动作分解', type: '广场舞', video: 'gcd-03.mp4', cover: '' },
-      { title: '酒醉的蝴蝶 · 广场版', type: '广场舞', video: 'gcd-04.mp4', cover: '' },
-      { title: '站在草原望北京 · 队形示范', type: '广场舞', video: 'gcd-05.mp4', cover: '' },
-      { title: '套马杆 · 完整版', type: '广场舞', video: 'gcd-06.mp4', cover: '' },
-    ] as { title: string; type: string; video: string; cover: string }[],
   },
   methods: {
     onLoad(options: any) {
@@ -138,6 +128,7 @@ Component({
           activeType: type,
           subTitle: type,
           isScoped: true,
+          currentType: type,
         })
 
         // 从搜索结果页跳过来，直接打开视频
@@ -159,8 +150,6 @@ Component({
       }
       this.applyFilter()
     },
-
-    // 搜索输入
     onSearchInput(e: any) {
       this.setData({ keyword: e.detail.value })
       this.applyFilter()
@@ -200,32 +189,15 @@ Component({
       })
     },
 
-    // 点击推荐视频 → 满屏播放（竖屏）
-    onOpenRecVideo(e: any) {
-      const title = e.currentTarget.dataset.title as string
-      const v = this.data.recommendVideos.find((r) => r.title === title)
-      if (!v) return
-      const fileID = resolveVideo(v.video)
-      playVideo(fileID).then((url) => {
-        this.setData({
-          currentVideo: url,
-          currentSong: v.title,
-          currentType: v.type,
-          videoFull: true,
-          showVideo: true,
-          rate: 1,
-          fireworkActive: false,
-          showPraise: false,
-        })
-        this.data._fireReady = false
-      })
-    },
 
     // 去跳舞：带当前视频跳转姿态识别页（主体播视频，右下角摄像头识别）
     onGoDance() {
       if (!this.data.currentVideo) return
       wx.navigateTo({
-        url: `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}&song=${encodeURIComponent(this.data.currentSong)}`,
+        url:
+          `../pose/pose?video=${encodeURIComponent(this.data.currentVideo)}` +
+          `&song=${encodeURIComponent(this.data.currentSong)}` +
+          `&type=${encodeURIComponent(this.data.currentType)}`,
       })
     },
 

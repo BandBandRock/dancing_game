@@ -1,0 +1,59 @@
+<view class="page">
+  <view class="header">
+    <text class="title">跳舞完成 🎉</text>
+    <text class="subtitle">来看看你刚才的表现吧</text>
+  </view>
+
+  <!-- 结果卡片 -->
+  <view class="result-card">
+    <view class="score-wrap">
+      <text class="score-num">{{score}}</text>
+      <text class="score-label">平均分</text>
+    </view>
+    <view class="meta">
+      <text class="song">{{song}}</text>
+      <text class="time">{{date}} {{timeText}}</text>
+    </view>
+  </view>
+
+  <!-- 视频预览（本人刚跳完的舞） -->
+  <view class="video-wrap" wx:if="{{video}}">
+    <video
+      class="preview"
+      src="{{video}}"
+      controls="{{true}}"
+      show-center-play-btn="{{true}}"
+      object-fit="contain"
+    ></video>
+  </view>
+
+  <!-- 四个按钮 -->
+  <view class="btn-row">
+    <view class="fb-btn" bindtap="onRedance">
+      <text class="fb-ico">🔁</text>
+      <text class="fb-txt">重跳</text>
+    </view>
+    <view class="fb-btn {{saved ? 'fb-done' : ''}}" bindtap="onSave">
+      <text class="fb-ico">💾</text>
+      <text class="fb-txt">{{saveLabel}}</text>
+    </view>
+    <view class="fb-btn" bindtap="onShare">
+      <text class="fb-ico">📤</text>
+      <text class="fb-txt">分享</text>
+    </view>
+    <view class="fb-btn fb-exit" bindtap="onExit">
+      <text class="fb-ico">🚪</text>
+      <text class="fb-txt">退出</text>
+    </view>
+  </view>
+
+  <!-- 分享弹窗 -->
+  <view class="mask" wx:if="{{showShare}}" bindtap="closeShare">
+    <view class="sheet" catchtap="noop">
+      <view class="sheet-title">分享到</view>
+      <button class="share-opt" open-type="share" bindtap="onShareFriend">分享给微信好友</button>
+      <view class="share-opt" bindtap="onPickShare" data-method="timeline">分享到朋友圈</view>
+      <view class="sheet-cancel" bindtap="closeShare">取消</view>
+    </view>
+  </view>
+</view>

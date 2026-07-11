@@ -1,4 +1,5 @@
 // home.ts
+
 interface Song {
   name: string
   artist: string
@@ -150,12 +151,6 @@ Component({
     goHistory() {
       wx.navigateTo({
         url: '../history/history',
-      })
-    },
-
-    goRank() {
-      wx.navigateTo({
-        url: '../rank/rank',
       })
     },
 
