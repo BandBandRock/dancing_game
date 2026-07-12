@@ -50,8 +50,7 @@
             <text class="cover-emoji">🎥</text>
           </view>
           <view class="cover-play">▶</view>
-          <!-- 调试齿轮 -->
-          <view class="debug-gear" catchtap="onDebugTap" data-id="{{item.id}}">⚙</view>
+
         </view>
         <!-- 信息区域 -->
         <view class="record-info">
@@ -64,8 +63,8 @@
           </view>
           <!-- 操作按钮 -->
           <view class="record-actions">
-            <button class="rec-btn rec-share" open-type="share" data-id="{{item.id}}" catchtap="noop">分享</button>
-            <view class="rec-btn rec-redance" catchtap="onRedance" data-id="{{item.id}}">再跳一次</view>
+            <button class="rec-btn rec-share" open-type="share" data-id="{{item.id}}" catchtap="noop">📤 分享</button>
+            <view class="rec-btn rec-redance" catchtap="onRedance" data-id="{{item.id}}">🕺 再跳一次</view>
           </view>
         </view>
       </view>

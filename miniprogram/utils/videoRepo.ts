@@ -23,6 +23,7 @@ export interface VideoMeta {
   type: string
   duration: string
   video: string // = fileID（cloud://...），字段名沿用页面里的 video 方便直接播放
+  skeletonFileID?: string // 教练骨骼 JSON 的 cloud:// fileID
   createTime?: number
 }
 
@@ -37,6 +38,7 @@ function normalize(doc: any): VideoMeta {
     type: doc.type || '未分类',
     duration: doc.duration || '',
     video: doc.fileID || doc.video || '',
+    skeletonFileID: doc.skeletonFileID || '',
     createTime: doc.createTime,
   }
 }

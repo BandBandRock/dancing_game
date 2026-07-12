@@ -34,9 +34,6 @@
   <view wx:if="{{danceVideo && !aligning && !counting && rate === 0.5}}" class="speed-panel">
     <view class="speed-tag speed-tag-on">{{rate}}x</view>
   </view>
-  <view wx:else class="main-empty">
-    <text class="main-empty-text">未选择教学视频</text>
-  </view>
 
   <!-- 左上角返回入口 -->
   <view class="back-btn" hover-class="back-btn-active" bindtap="goBack">

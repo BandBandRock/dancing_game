@@ -95,11 +95,7 @@ function frameSimilarity(ref: Canon, usr: Canon): number {
   return wsum ? sum / wsum : 0
 }
 
-// 由教学视频地址推导示范骨骼 JSON 地址（约定：<名>_coco17.json）
-//   v1_coco17.mp4 → v1_coco17.json ；gcd-02.mp4 → gcd-02_coco17.json
-function skeletonUrl(videoUrl: string): string {
-  return videoUrl.replace(/(_coco17)?\.mp4$/i, '_coco17.json')
-}
+
 
 Component({
   data: {
@@ -160,6 +156,8 @@ Component({
     _refT: [] as number[],          // 示范骨骼时间轴（秒）
     _refCanon: [] as Canon[],       // 示范骨骼每帧的规范骨架（预计算）
     _userSkel: [] as { t: number; kp: number[][] }[], // 用户跳舞骨骼序列（{t, kp:[[x,y,c]×17]}），结束时上传云端
+    _skeletonFileID: '', // 教练骨骼 JSON 的 cloud:// fileID（从 dance_search 传入）
+    _prevKp: null as number[][] | null, // 上一帧关键点（简易打分用）
     _videoTime: 0,      // 当前教学视频播放位置(秒)，来自 timeupdate
     _skipCount: 0,      // 连续跳过的采样次数（多人/缺帧）
     _alignTimer: 0,     // 对齐检测计时器
@@ -197,6 +195,10 @@ Component({
           songType: options.type ? decodeURIComponent(options.type) : '',
           rate,
         })
+        // 保存教练骨骼 fileID（从 dance_search 传入）
+        if (options.skeleton) {
+          this.data._skeletonFileID = decodeURIComponent(options.skeleton)
+        }
         // 同步设置视频倍速
         setTimeout(() => {
           const vc = wx.createVideoContext('danceVideo', this)
@@ -344,7 +346,7 @@ Component({
         const tempPath = await this.stopRecording()
         if (tempPath) {
           // 上传到云存储（云端 fileID 永久有效、跨设备可用），创建者=当前用户自带读权限
-          wx.showLoading({ title: '保存中…', mask: true })
+          wx.showLoading({ title: '正在计算…', mask: true })
           try {
             const result = await uploadVideo({
               filePath: tempPath,
@@ -372,7 +374,7 @@ Component({
           const fs = wx.getFileSystemManager()
           const jsonPath = `${wx.env.USER_DATA_PATH}/dance_${Date.now()}_skel.json`
           fs.writeFileSync(jsonPath, JSON.stringify(this.data._userSkel))
-          wx.showLoading({ title: '保存骨骼…', mask: true })
+          wx.showLoading({ title: '正在计算…', mask: true })
           const skelRes = await uploadVideo({
             filePath: jsonPath,
             fileName: `dance_${Date.now()}_skeleton.json`,
@@ -406,6 +408,7 @@ Component({
       }
 
       // 跳转反馈页（保存/分享由反馈页落盘到历史）
+      wx.hideLoading()
       wx.setStorageSync('__pendingDance', pending)
       wx.redirectTo({ url: '../feedback/feedback' })
     },
@@ -1018,14 +1021,11 @@ Component({
     // 单帧采样：定位参考帧 → 取用户骨骼 → 算相似度 → EMA 平滑成分数
     sampleScore() {
       if (!this.data.started || this.data.ended) return
-      if (!this.data.refReady) return     // 示范骨骼未就绪先不评分
 
-      const ref = this.lookupRef(this.data._videoTime)
       const usr = this.currentUserKp()
-      const refUsable = !!ref && ref.some((j, i) => j && SCORED_JOINTS.indexOf(i) >= 0)
 
-      // 参考缺帧 或 用户侧非单人（0 人 / 多人）→ 跳过本次，累计跳帧数
-      if (!refUsable || !usr) {
+      // 没检测到人 → 跳过
+      if (!usr) {
         this.data._skipCount++
         if (this.data._skipCount >= SKIP_WARN_FRAMES && !this.data.warn) {
           this.setData({ warn: true })
@@ -1033,28 +1033,58 @@ Component({
         return
       }
 
-      // 恢复正常：清零跳帧计数并关闭告警
       this.data._skipCount = 0
       if (this.data.warn) this.setData({ warn: false })
 
+      // === 简易算法：只要手脚在动就给分（不依赖教练骨骼） ===
+      // 计算四肢关键点（腕+踝）相对上一帧的位移，有动就给高分
+      const limbs = [9, 10, 15, 16] // 左腕、右腕、左踝、右踝
+      let motion = 0
+      const prev = this.data._prevKp as number[][] | null
+      if (prev && prev.length === 17) {
+        for (const i of limbs) {
+          const dx = usr[i].x - prev[i][0]
+          const dy = usr[i].y - prev[i][1]
+          motion += Math.sqrt(dx * dx + dy * dy)
+        }
+      }
+      // 保存当前帧供下次对比
+      this.data._prevKp = usr.map((p) => [p.x, p.y, p.c])
+
+      // motion 归一化：经验值，motion > 0.15 算"在动"
+      const moving = motion > 0.05
+      const inst = moving ? Math.min(100, 60 + Math.round(motion * 200)) : 40
+      const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
+      this.setData({ score, moving })
+
+      // 累积本帧用户骨骼
+      this.data._userSkel.push({
+        t: this.data._videoTime,
+        kp: usr.map((p) => [p.x, p.y, p.c]),
+      })
+
+      /* === 原算法（对比教练骨骼打分，暂时保留备用） ===
+      if (!this.data.refReady) return
+      const ref = this.lookupRef(this.data._videoTime)
+      const refUsable = !!ref && ref.some((j, i) => j && SCORED_JOINTS.indexOf(i) >= 0)
+      if (!refUsable) return
       const uc = canonicalize(usr)
       const sim = frameSimilarity(ref, uc)
       const inst = Math.round(sim * 100)
       const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
       this.setData({ score, moving: sim > 0.5 })
-
-      // 累积本帧用户骨骼（与示范骨骼同格式 {t, kp:[[x,y,c]×17]}），t 取教学视频时间便于对齐回放
-      this.data._userSkel.push({
-        t: this.data._videoTime,
-        kp: usr.map((p) => [p.x, p.y, p.c]),
-      })
+      === 原算法结束 === */
     },
 
     // 下载并解析示范骨骼 JSON（开始跳舞时调用）
     loadReference() {
-      if (!this.data.danceVideo) return
-      const url = skeletonUrl(this.data.danceVideo)
-      console.log('[pose] 下载示范骨骼:', url)
+      // 优先用从 videos 集合传入的 skeletonFileID
+      const skelFileID = this.data._skeletonFileID
+      if (!skelFileID) {
+        console.warn('[pose] 无教练骨骼 fileID，跳过示范骨骼加载（打分将不可用）')
+        return
+      }
+      console.log('[pose] 下载示范骨骼:', skelFileID)
 
       // 真正发起请求（拿到可访问的 https 地址后）
       const fetchJson = (reqUrl: string) => {
@@ -1090,8 +1120,8 @@ Component({
         })
       }
 
-      // 统一策略：cloud:// fileID 先解析成临时 https，再 wx.request 下载
-      resolveCloudFile(url).then(fetchJson).catch((e) => {
+      // cloud:// fileID 先解析成临时 https，再 wx.request 下载
+      resolveCloudFile(skelFileID).then(fetchJson).catch((e) => {
         console.error('[pose] 示范骨骼解析/下载失败', e)
       })
     },

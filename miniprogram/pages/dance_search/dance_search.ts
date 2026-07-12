@@ -26,6 +26,7 @@ Component({
     showVideo: false,
     currentVideo: '',
     currentFileID: '', // 原始 cloud:// fileID（不会过期，供 pose/history 使用）
+    currentSkeletonFileID: '', // 教练骨骼 JSON fileID
     currentSong: '',
     currentType: '',
     subTitle: '',
@@ -171,7 +172,8 @@ Component({
       playVideo(song.video).then((url) => {
         this.setData({
           currentVideo: url,
-          currentFileID: song.video, // 保存原始 fileID
+          currentFileID: song.video,
+          currentSkeletonFileID: song.skeletonFileID || '',
           currentSong: song.name,
           currentType: song.type,
           videoFull: false,
@@ -192,14 +194,15 @@ Component({
           `../pose/pose?video=${encodeURIComponent(this.data.currentFileID)}` +
           `&song=${encodeURIComponent(this.data.currentSong)}` +
           `&type=${encodeURIComponent(this.data.currentType)}` +
-          `&rate=${this.data.rate}`,
+          `&rate=${this.data.rate}` +
+          `&skeleton=${encodeURIComponent(this.data.currentSkeletonFileID || '')}`,
       })
     },
 
     // 关闭视频
     onCloseVideo() {
       this.stopFirework()
-      this.setData({ showVideo: false, currentVideo: '', currentFileID: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
+      this.setData({ showVideo: false, currentVideo: '', currentFileID: '', currentSkeletonFileID: '', currentSong: '', currentType: '', videoFull: false, rate: 0.8, fireworkActive: false, showPraise: false })
     },
 
     // 视频播放结束 → 礼花 + 你真棒
