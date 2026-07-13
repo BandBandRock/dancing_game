@@ -106,7 +106,7 @@
       >0.8x</view>
     </view>
 
-    <view wx:if="{{!videoFull}}" class="video-tip">替换为您自己的舞曲视频即可精准匹配</view>
+    <view wx:if="{{!videoFull && !currentSkeletonFileID && useSkeletonAlgo}}" class="video-tip no-skel-tip">⚠️ 该视频暂无骨骼数据，打分可能不准确</view>
     <view wx:if="{{!videoFull}}" class="video-go-dance" bindtap="onGoDance">🕺 去跳舞</view>
     <view wx:if="{{!videoFull}}" class="video-close" bindtap="onCloseVideo">关闭</view>
   </view>

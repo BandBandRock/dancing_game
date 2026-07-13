@@ -1,4 +1,4 @@
-// pages/tools/fill-duration.ts
+d// pages/tools/fill-duration.ts
 // 工具页：获取所有视频时长并批量写回云数据库
 // 入口：在开发者工具地址栏输入 pages/tools/fill-duration 打开
 import { resolveCloudFile } from '../../utils/cloudMedia'

@@ -39,11 +39,17 @@ Component({
     },
     fireworkActive: false,
     showPraise: false,
+    useSkeletonAlgo: false, // 是否使用骨骼相似算法（用于前端提示，不暴露切换入口）
     // 收藏状态：key = "name|type" → 云端记录 _id（空串表示未收藏）
     favoritedKeys: {} as Record<string, string>,
   },
   methods: {
     async onLoad(options: any) {
+      // 检测当前打分算法
+      const app = getApp()
+      const algo = (app.globalData && app.globalData.scoreAlgorithm) || 'simple'
+      this.setData({ useSkeletonAlgo: algo === 'skeleton' })
+
       // 加载收藏状态
       this.loadFavorites()
 

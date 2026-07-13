@@ -90,7 +90,7 @@
     <text class="unsupported-desc">{{unsupportedReason}}</text>
   </view>
 
-  <!-- 对齐阶段覆盖层：提示 + 3 秒进度条 -->
+  <!-- 对齐阶段覆盖层：提示 + 3 秒进度条 + 跳过按钮 -->
   <view wx:if="{{aligning}}" class="align-overlay">
     <view class="align-tip {{inBox ? 'align-tip-ok' : ''}}">
       {{alignHint}}
@@ -99,6 +99,7 @@
       <view class="align-fill" style="width: {{alignProgress}}%"></view>
     </view>
     <view class="align-pct">{{alignProgress}}%</view>
+    <view wx:if="{{showSkipAlign}}" class="skip-align-btn" bindtap="onSkipAlign">跳过，直接开始</view>
   </view>
 
   <!-- 3-2-1 倒计时遮罩（识别通过后、正式开始前；分三个元素以重放动画） -->

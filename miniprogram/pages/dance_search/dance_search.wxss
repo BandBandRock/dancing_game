@@ -210,6 +210,10 @@ page {
   color: #999;
   text-align: center;
 }
+.no-skel-tip {
+  color: #e6a23c;
+  font-weight: 600;
+}
 
 /* 倍速按钮行 */
 .speed-row {

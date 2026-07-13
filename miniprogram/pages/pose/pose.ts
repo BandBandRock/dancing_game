@@ -43,7 +43,8 @@ const SCORE_THRESHOLD = 0.3
 
 // ===== 可调参数（调试打分效果用，方便微调）=====
 const TOL = 0.6               // 规范空间容差：关节距离 > TOL 个「肩距」则该关节相似度归零
-const SAMPLE_INTERVAL = 200   // 打分采样间隔(ms)：每 200ms 比对一次参考帧
+const SAMPLE_INTERVAL = 200       // 打分采样间隔(ms)：骨骼相似版 200ms
+const SAMPLE_INTERVAL_SIMPLE = 1000 // 简单版采样间隔 1s
 const FLIP_REF = true         // 示范视频是否镜像：自拍预览被系统镜像，默认翻转参考以对齐左右
 const EMA_ALPHA = 0.3         // 分数平滑：瞬时分权重 0.3，历史分权重 0.7
 const SKIP_WARN_FRAMES = 15   // 连续跳过(多人/缺帧)达 15 次(≈3s) → 触发红色告警
@@ -129,6 +130,7 @@ Component({
     alignProgress: 0,     // 对齐进度 0~100
     inBox: false,         // 当前单人是否整体落在红框内（用于 UI 反馈）
     alignHint: '把身体中部对准红框',  // 对齐提示文案（居中/太远/太近）
+    showSkipAlign: false, // 3秒后显示"跳过对齐"按钮
     counting: false,     // 是否处于「3-2-1 倒计时」阶段（对齐达标后、正式开始前）
     countdown: 0,        // 倒计时数字（3/2/1），0 表示不显示
     shaking: {         // 倍速按钮颤动状态
@@ -907,12 +909,15 @@ Component({
       })
     },
 
-    // ---- 算分：每 SAMPLE_INTERVAL(ms) 采样一次，与对应时刻的示范骨架比对 ----
+    // ---- 算分：根据算法选择采样间隔 ----
     startScoring() {
       if (this.data._scoreTimer) return
+      const app = getApp()
+      const algorithm = (app.globalData && app.globalData.scoreAlgorithm) || 'simple'
+      const interval = algorithm === 'simple' ? SAMPLE_INTERVAL_SIMPLE : SAMPLE_INTERVAL
       this.data._scoreTimer = setInterval(() => {
         this.sampleScore()
-      }, SAMPLE_INTERVAL) as unknown as number
+      }, interval) as unknown as number
     },
 
     // ---- 对齐阶段：每 100ms 检测一次「躯干是否居中」，累计 alignCfg().hold 后自动开始 ----
@@ -920,6 +925,13 @@ Component({
       if (this.data._alignTimer) return
       this.data._alignHold = alignCfg().hold
       this.data._alignLast = Date.now()
+      // 3 秒后显示"跳过"按钮
+      this.setData({ showSkipAlign: false })
+      setTimeout(() => {
+        if (this.data.aligning) {
+          this.setData({ showSkipAlign: true })
+        }
+      }, 3000)
       this.data._alignTimer = setInterval(() => {
         this.tickAlign()
       }, 100) as unknown as number
@@ -958,7 +970,13 @@ Component({
         clearInterval(this.data._alignTimer)
         this.data._alignTimer = 0
       }
-      this.setData({ aligning: false })
+      this.setData({ aligning: false, showSkipAlign: false })
+    },
+
+    // 跳过对齐，强制开始
+    onSkipAlign() {
+      this.stopAligning()
+      this.startWithCountdown()
     },
 
     // 判断当前是否为「单人且躯干居中」：只需肩/髋中心落在中央框内，且躯干不太小（不站太远）
@@ -1019,6 +1037,9 @@ Component({
     },
 
     // 单帧采样：定位参考帧 → 取用户骨骼 → 算相似度 → EMA 平滑成分数
+    // 打分采样（算法由 globalData.scoreAlgorithm 控制，不暴露给前端 UI）
+    // 'simple'   = 简单版：只检测手脚运动幅度，动就给分
+    // 'skeleton' = 骨骼相似版：逐帧对比教练骨骼相似度
     sampleScore() {
       if (!this.data.started || this.data.ended) return
 
@@ -1036,44 +1057,44 @@ Component({
       this.data._skipCount = 0
       if (this.data.warn) this.setData({ warn: false })
 
-      // === 简易算法：只要手脚在动就给分（不依赖教练骨骼） ===
-      // 计算四肢关键点（腕+踝）相对上一帧的位移，有动就给高分
-      const limbs = [9, 10, 15, 16] // 左腕、右腕、左踝、右踝
-      let motion = 0
-      const prev = this.data._prevKp as number[][] | null
-      if (prev && prev.length === 17) {
-        for (const i of limbs) {
-          const dx = usr[i].x - prev[i][0]
-          const dy = usr[i].y - prev[i][1]
-          motion += Math.sqrt(dx * dx + dy * dy)
+      const app = getApp()
+      const algorithm = (app.globalData && app.globalData.scoreAlgorithm) || 'simple'
+
+      if (algorithm === 'skeleton') {
+        // ====== 骨骼相似版：逐帧对比教练骨骼 ======
+        if (!this.data.refReady) return
+        const ref = this.lookupRef(this.data._videoTime)
+        const refUsable = !!ref && ref.some((j: any, i: number) => j && SCORED_JOINTS.indexOf(i) >= 0)
+        if (!refUsable) return
+        const uc = canonicalize(usr)
+        const sim = frameSimilarity(ref, uc)
+        const inst = Math.round(sim * 100)
+        const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
+        this.setData({ score, moving: sim > 0.5 })
+      } else {
+        // ====== 简单版：只要手脚在动就给分 ======
+        const limbs = [9, 10, 15, 16] // 左腕、右腕、左踝、右踝
+        let motion = 0
+        const prev = this.data._prevKp as number[][] | null
+        if (prev && prev.length === 17) {
+          for (const i of limbs) {
+            const dx = usr[i].x - prev[i][0]
+            const dy = usr[i].y - prev[i][1]
+            motion += Math.sqrt(dx * dx + dy * dy)
+          }
         }
+        this.data._prevKp = usr.map((p) => [p.x, p.y, p.c])
+        const moving = motion > 0.05
+        const inst = moving ? Math.min(100, 60 + Math.round(motion * 200)) : 40
+        const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
+        this.setData({ score, moving })
       }
-      // 保存当前帧供下次对比
-      this.data._prevKp = usr.map((p) => [p.x, p.y, p.c])
 
-      // motion 归一化：经验值，motion > 0.15 算"在动"
-      const moving = motion > 0.05
-      const inst = moving ? Math.min(100, 60 + Math.round(motion * 200)) : 40
-      const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
-      this.setData({ score, moving })
-
-      // 累积本帧用户骨骼
+      // 累积本帧用户骨骼（两种算法都记录，用于回放）
       this.data._userSkel.push({
         t: this.data._videoTime,
         kp: usr.map((p) => [p.x, p.y, p.c]),
       })
-
-      /* === 原算法（对比教练骨骼打分，暂时保留备用） ===
-      if (!this.data.refReady) return
-      const ref = this.lookupRef(this.data._videoTime)
-      const refUsable = !!ref && ref.some((j, i) => j && SCORED_JOINTS.indexOf(i) >= 0)
-      if (!refUsable) return
-      const uc = canonicalize(usr)
-      const sim = frameSimilarity(ref, uc)
-      const inst = Math.round(sim * 100)
-      const score = Math.round(this.data.score * (1 - EMA_ALPHA) + inst * EMA_ALPHA)
-      this.setData({ score, moving: sim > 0.5 })
-      === 原算法结束 === */
     },
 
     // 下载并解析示范骨骼 JSON（开始跳舞时调用）
